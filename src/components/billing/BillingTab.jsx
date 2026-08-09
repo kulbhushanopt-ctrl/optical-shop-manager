@@ -7,6 +7,7 @@ import {
   decrementInventoryStock,
   updateInventoryItem,
   deleteInvoice as apiDeleteInvoice,
+  recordInvoicePaymentEntry,
 } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
 import { currency, formatDate, invoiceStatus, statusTone, orderStatusLabel, orderStatusTone } from "../../lib/format";
@@ -21,7 +22,7 @@ const ORDER_FILTERS = [
   { id: "delivered", label: "Delivered" },
 ];
 
-export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, branchId, isOwner, shopInfo }) {
+export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, payments, setPayments, branchId, isOwner, shopInfo }) {
   const [showNew, setShowNew] = useState(false);
   const [openInvoiceId, setOpenInvoiceId] = useState(null);
   const [showReport, setShowReport] = useState(false);
@@ -35,6 +36,15 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
     try {
       const saved = await apiCreateInvoice(branchId, invoice);
       setInvoices([saved, ...invoices]);
+
+      if (saved.amountPaid > 0) {
+        try {
+          const entry = await recordInvoicePaymentEntry(branchId, saved.id, saved.amountPaid, invoice.paymentMethod || "cash");
+          setPayments([entry, ...payments]);
+        } catch (e) {
+          /* payment logged in the invoice total regardless; mode log is best-effort */
+        }
+      }
 
       // Sell items decrement stock via a narrow RPC — inventory writes are
       // owner-only under RLS, but staff still need to be able to sell items.
@@ -74,13 +84,14 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       setInventory(updatedInventory);
       await apiDeleteInvoice(invoice.id);
       setInvoices(invoices.filter((i) => i.id !== invoice.id));
+      setPayments(payments.filter((p) => p.invoiceId !== invoice.id));
       setOpenInvoiceId(null);
     } catch (e) {
       setError("Couldn't delete invoice — please try again.");
     }
   };
 
-  const recordPayment = async (inv, additionalAmount) => {
+  const recordPayment = async (inv, additionalAmount, method) => {
     try {
       const newAmountPaid = Math.max(0, Math.min(inv.total, (inv.amountPaid || 0) + additionalAmount));
       const updated = await updateInvoicePayment(inv.id, {
@@ -88,6 +99,12 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
         status: invoiceStatus(newAmountPaid, inv.total),
       });
       setInvoices(invoices.map((i) => (i.id === updated.id ? updated : i)));
+      try {
+        const entry = await recordInvoicePaymentEntry(branchId, inv.id, additionalAmount, method || "cash");
+        setPayments([entry, ...payments]);
+      } catch (e) {
+        /* payment total already saved; mode log is best-effort */
+      }
     } catch (e) {
       setError("Couldn't update invoice — please try again.");
     }
@@ -200,15 +217,16 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       {openInvoice && (
         <InvoiceDetailModal
           invoice={openInvoice}
+          payments={payments.filter((p) => p.invoiceId === openInvoice.id)}
           onClose={() => setOpenInvoiceId(null)}
-          onRecordPayment={(amt) => recordPayment(openInvoice, amt)}
+          onRecordPayment={(amt, method) => recordPayment(openInvoice, amt, method)}
           onChangeOrderStatus={(status) => advanceOrderStatus(openInvoice, status)}
           onDelete={isOwner ? () => removeInvoice(openInvoice) : undefined}
           shopInfo={shopInfo}
           patients={patients}
         />
       )}
-      {showReport && <SalesReportModal invoices={invoices} shopInfo={shopInfo} onClose={() => setShowReport(false)} />}
+      {showReport && <SalesReportModal invoices={invoices} payments={payments} shopInfo={shopInfo} onClose={() => setShowReport(false)} />}
     </div>
   );
 }

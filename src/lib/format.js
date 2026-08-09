@@ -42,6 +42,15 @@ export function statusTone(status) {
   return { text: "text-warn", bg: "bg-warnSoft" };
 }
 
+export const PAYMENT_METHODS = ["cash", "upi", "card", "other"];
+
+export function paymentMethodLabel(method) {
+  if (method === "upi") return "UPI";
+  if (method === "card") return "Card";
+  if (method === "other") return "Other";
+  return "Cash";
+}
+
 export const ORDER_STATUSES = ["processing", "ready", "delivered"];
 
 export function orderStatusLabel(status) {

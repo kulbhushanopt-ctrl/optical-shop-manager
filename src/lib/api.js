@@ -340,6 +340,37 @@ export async function updateInvoiceOrderStatus(id, orderStatus) {
   return invoiceFromDb(data);
 }
 
+/* ---------- Invoice payments (which mode each payment was made in) ---------- */
+function paymentFromDb(row) {
+  return {
+    id: row.id,
+    invoiceId: row.invoice_id,
+    amount: row.amount,
+    method: row.method,
+    paidAt: row.paid_at,
+  };
+}
+
+export async function fetchInvoicePayments(branchId) {
+  const { data, error } = await supabase
+    .from("invoice_payments")
+    .select("*")
+    .eq("branch_id", branchId)
+    .order("paid_at", { ascending: false });
+  if (error) throw error;
+  return data.map(paymentFromDb);
+}
+
+export async function recordInvoicePaymentEntry(branchId, invoiceId, amount, method) {
+  const { data, error } = await supabase
+    .from("invoice_payments")
+    .insert({ branch_id: branchId, invoice_id: invoiceId, amount, method })
+    .select()
+    .single();
+  if (error) throw error;
+  return paymentFromDb(data);
+}
+
 export async function deleteInvoice(id) {
   const { error } = await supabase.from("invoices").delete().eq("id", id);
   if (error) throw error;

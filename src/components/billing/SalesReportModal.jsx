@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, Receipt } from "lucide-react";
 import { Modal, Field, TextInput, EmptyState } from "../shared/ui";
-import { currency, todayISO, formatDate, statusTone } from "../../lib/format";
+import { currency, todayISO, formatDate, statusTone, PAYMENT_METHODS, paymentMethodLabel } from "../../lib/format";
 
 const REPORT_RANGES = [
   { id: "today", label: "Today" },
@@ -34,7 +34,7 @@ function computeReportRange(range, customFrom, customTo) {
   return { from: customFrom || today, to: customTo || today };
 }
 
-export default function SalesReportModal({ invoices, shopInfo, onClose }) {
+export default function SalesReportModal({ invoices, payments, shopInfo, onClose }) {
   const [range, setRange] = useState("month");
   const [customFrom, setCustomFrom] = useState(todayISO());
   const [customTo, setCustomTo] = useState(todayISO());
@@ -42,6 +42,15 @@ export default function SalesReportModal({ invoices, shopInfo, onClose }) {
   const { from, to } = computeReportRange(range, customFrom, customTo);
   const filtered = invoices.filter((i) => i.date >= from && i.date <= to);
   const sorted = [...filtered].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const filteredPayments = (payments || []).filter((p) => {
+    const d = (p.paidAt || "").slice(0, 10);
+    return d >= from && d <= to;
+  });
+  const byMethod = PAYMENT_METHODS.map((m) => ({
+    method: m,
+    total: filteredPayments.filter((p) => p.method === m).reduce((s, p) => s + (p.amount || 0), 0),
+  })).filter((m) => m.total > 0);
 
   const totalRevenue = filtered.reduce((s, i) => s + (i.total || 0), 0);
   const totalCollected = filtered.reduce((s, i) => s + (i.amountPaid || 0), 0);
@@ -117,6 +126,20 @@ export default function SalesReportModal({ invoices, shopInfo, onClose }) {
           <p className="text-lg font-semibold text-ink font-mono">{filtered.length}</p>
         </div>
       </div>
+
+      {byMethod.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-slate mb-2">Collected by payment mode</p>
+          <div className="flex flex-col gap-1.5">
+            {byMethod.map((m) => (
+              <div key={m.method} className="flex items-center justify-between bg-paper rounded-lg px-3 py-2">
+                <span className="text-xs text-ink">{paymentMethodLabel(m.method)}</span>
+                <span className="text-xs font-semibold text-ink font-mono">{currency(m.total)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-slate">GST collected (CGST + SGST)</span>

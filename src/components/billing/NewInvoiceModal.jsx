@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { createPatient } from "../../lib/api";
 import { Modal, Field, TextInput, Select, PrimaryBtn, SecondaryBtn } from "../shared/ui";
-import { currency, todayISO, formatDate, invoiceStatus } from "../../lib/format";
+import { currency, todayISO, formatDate, invoiceStatus, PAYMENT_METHODS, paymentMethodLabel } from "../../lib/format";
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
@@ -21,6 +21,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   const [amountPaidInput, setAmountPaidInput] = useState("");
   const [prescriptionId, setPrescriptionId] = useState("");
   const [collectLater, setCollectLater] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   const addNewPatient = async () => {
     if (!newPatientName.trim()) return;
@@ -90,6 +91,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
       status: invoiceStatus(amountPaid, total),
       prescription: selectedPrescription,
       orderStatus: collectLater ? "processing" : "delivered",
+      paymentMethod,
     });
   };
 
@@ -287,6 +289,24 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
           <button type="button" onClick={() => setAmountPaidInput("")} className="px-3 rounded-xl text-xs font-semibold whitespace-nowrap bg-border text-slate">Unpaid</button>
         </div>
       </Field>
+      {amountPaid > 0 && (
+        <Field label="Payment mode">
+          <div className="flex gap-2 flex-wrap">
+            {PAYMENT_METHODS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setPaymentMethod(m)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                  paymentMethod === m ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"
+                }`}
+              >
+                {paymentMethodLabel(m)}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-slate">Amount paid</span>
         <span className="text-xs text-good font-mono">{currency(amountPaid)}</span>

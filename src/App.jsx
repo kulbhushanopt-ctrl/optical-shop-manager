@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Home, Users, Receipt, Package, AlertTriangle } from "lucide-react";
 import { supabase, supabaseConfigError } from "./lib/supabaseClient";
-import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, signOut } from "./lib/api";
+import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, fetchInvoicePayments, signOut } from "./lib/api";
 import { Spinner, BottomNav } from "./components/shared/ui";
 import AuthScreen from "./components/AuthScreen";
 import ShopAccessGate from "./components/ShopAccessGate";
@@ -132,20 +132,28 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const [patients, setPatients] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [payments, setPayments] = useState([]);
   const isOwner = role === "owner";
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [p, inv, invc] = await Promise.all([fetchPatients(branch.id), fetchInventory(branch.id), fetchInvoices(branch.id)]);
+        const [p, inv, invc, pay] = await Promise.all([
+          fetchPatients(branch.id),
+          fetchInventory(branch.id),
+          fetchInvoices(branch.id),
+          fetchInvoicePayments(branch.id),
+        ]);
         setPatients(p);
         setInventory(inv);
         setInvoices(invc);
+        setPayments(pay);
       } catch (e) {
         setPatients([]);
         setInventory([]);
         setInvoices([]);
+        setPayments([]);
       }
       setLoading(false);
     })();
@@ -185,6 +193,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
               setInventory={setInventory}
               invoices={invoices}
               setInvoices={setInvoices}
+              payments={payments}
+              setPayments={setPayments}
               branchId={branch.id}
               isOwner={isOwner}
               shopInfo={branch}

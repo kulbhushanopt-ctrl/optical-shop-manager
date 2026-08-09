@@ -2,13 +2,23 @@ import React, { useMemo, useRef, useState } from "react";
 import { Glasses, Check, Trash2, MessageCircle } from "lucide-react";
 import { Modal, Field, TextInput, PrimaryBtn, ConfirmModal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
-import { currency, formatDate, statusTone, ORDER_STATUSES, orderStatusLabel, orderStatusTone } from "../../lib/format";
+import {
+  currency,
+  formatDate,
+  statusTone,
+  ORDER_STATUSES,
+  orderStatusLabel,
+  orderStatusTone,
+  PAYMENT_METHODS,
+  paymentMethodLabel,
+} from "../../lib/format";
 import { orderStatusMessage } from "../../lib/messages";
 import { openWhatsapp } from "../../lib/share";
 
-export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, onChangeOrderStatus, onDelete, shopInfo, patients }) {
+export default function InvoiceDetailModal({ invoice, payments, onClose, onRecordPayment, onChangeOrderStatus, onDelete, shopInfo, patients }) {
   const invoiceRef = useRef(null);
   const [payInput, setPayInput] = useState("");
+  const [payMethod, setPayMethod] = useState("cash");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const patient = patients?.find((p) => p.id === invoice.patientId);
   const balanceLeft = Math.max(0, invoice.total - (invoice.amountPaid || 0));
@@ -276,11 +286,27 @@ export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, 
               </button>
             </div>
           </Field>
+          <Field label="Payment mode">
+            <div className="flex gap-2 flex-wrap">
+              {PAYMENT_METHODS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPayMethod(m)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                    payMethod === m ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"
+                  }`}
+                >
+                  {paymentMethodLabel(m)}
+                </button>
+              ))}
+            </div>
+          </Field>
           <PrimaryBtn
             full
             disabled={!payInput || Number(payInput) <= 0}
             onClick={() => {
-              onRecordPayment(Number(payInput) || 0);
+              onRecordPayment(Number(payInput) || 0, payMethod);
               setPayInput("");
             }}
           >
@@ -288,6 +314,20 @@ export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, 
               <Check size={15} /> Record payment
             </span>
           </PrimaryBtn>
+        </div>
+      )}
+
+      {payments && payments.length > 0 && (
+        <div className="no-print mt-4">
+          <p className="text-xs font-semibold text-slate mb-2">Payment history</p>
+          <div className="space-y-1.5">
+            {payments.map((p) => (
+              <div key={p.id} className="flex items-center justify-between bg-paper rounded-lg px-3 py-2">
+                <span className="text-xs text-slate">{formatDate(p.paidAt)} · {paymentMethodLabel(p.method)}</span>
+                <span className="text-xs font-semibold text-ink font-mono">{currency(p.amount)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
