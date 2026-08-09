@@ -1,10 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Eye, Droplet, Trash2, Camera, Loader2, Sparkles } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
-import { compressImage } from "../../lib/image";
 import { scanFrameTemple } from "../../lib/api";
+import CameraCapture from "../shared/CameraCapture";
 
 const CONTACT_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
 const CONTACT_TYPES = ["Spherical", "Toric", "Multifocal"];
@@ -34,16 +34,13 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
 
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
-  const scanFileRef = useRef(null);
+  const [showCamera, setShowCamera] = useState(false);
 
-  const handleScanPhoto = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const handleScanPhoto = async (photo) => {
+    setShowCamera(false);
     setScanning(true);
     setScanNotice("");
     try {
-      const photo = await compressImage(file, 900, 0.8);
       const result = await scanFrameTemple(photo);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI frame scanning isn't set up yet.");
@@ -81,10 +78,9 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
 
       {(f.type === "frame" || f.type === "sunglasses") && (
         <div className="mb-3.5">
-          <input ref={scanFileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleScanPhoto} />
           <button
             type="button"
-            onClick={() => scanFileRef.current?.click()}
+            onClick={() => setShowCamera(true)}
             disabled={scanning}
             className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
@@ -93,6 +89,7 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
             {!scanning && <Sparkles size={12} />}
           </button>
           {scanNotice && <p className="text-[11px] text-slate mt-1.5">{scanNotice}</p>}
+          {showCamera && <CameraCapture onCapture={handleScanPhoto} onClose={() => setShowCamera(false)} />}
         </div>
       )}
 
