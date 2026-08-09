@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { compressImage } from "../../lib/image";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS } from "../../lib/rxConstants";
-import { Modal, Field, VoiceInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
+import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
+import { Modal, Field, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 
 export default function AddRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState({
@@ -37,20 +38,20 @@ export default function AddRxModal({ onClose, onSave, initial }) {
   return (
     <Modal title={initial ? "Edit glasses prescription" : "Add glasses prescription"} onClose={onClose}>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="OD Sphere"><VoiceInput value={f.odSphere} onChange={set("odSphere")} placeholder="-2.00" /></Field>
-        <Field label="OD Cyl"><VoiceInput value={f.odCyl} onChange={set("odCyl")} placeholder="-0.50" /></Field>
-        <Field label="OD Axis"><VoiceInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" /></Field>
+        <Field label="OD Sphere"><VoiceRxInput value={f.odSphere} onChange={set("odSphere")} placeholder="-2.00" parse={parseRxPower} /></Field>
+        <Field label="OD Cyl"><VoiceRxInput value={f.odCyl} onChange={set("odCyl")} placeholder="-0.50" parse={parseRxPower} /></Field>
+        <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="OS Sphere"><VoiceInput value={f.osSphere} onChange={set("osSphere")} placeholder="-1.75" /></Field>
-        <Field label="OS Cyl"><VoiceInput value={f.osCyl} onChange={set("osCyl")} placeholder="-0.25" /></Field>
-        <Field label="OS Axis"><VoiceInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" /></Field>
+        <Field label="OS Sphere"><VoiceRxInput value={f.osSphere} onChange={set("osSphere")} placeholder="-1.75" parse={parseRxPower} /></Field>
+        <Field label="OS Cyl"><VoiceRxInput value={f.osCyl} onChange={set("osCyl")} placeholder="-0.25" parse={parseRxPower} /></Field>
+        <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="OD Add"><VoiceInput value={f.odAdd} onChange={set("odAdd")} placeholder="+2.00" /></Field>
-        <Field label="OS Add"><VoiceInput value={f.osAdd} onChange={set("osAdd")} placeholder="+2.00" /></Field>
+        <Field label="OD Add"><VoiceRxInput value={f.odAdd} onChange={set("odAdd")} placeholder="+2.00" parse={parseRxAdd} /></Field>
+        <Field label="OS Add"><VoiceRxInput value={f.osAdd} onChange={set("osAdd")} placeholder="+2.00" parse={parseRxAdd} /></Field>
       </div>
-      <Field label="Pupillary distance (mm)"><VoiceInput value={f.pd} onChange={set("pd")} placeholder="62" /></Field>
+      <Field label="Pupillary distance (mm)"><VoiceRxInput value={f.pd} onChange={set("pd")} placeholder="62" parse={parseRxPlainNumber} /></Field>
 
       <div className="border-t border-dashed border-border pt-3.5 mt-1 mb-3.5">
         <h4 className="font-display text-sm font-semibold text-ink mb-3">Lens preferences</h4>

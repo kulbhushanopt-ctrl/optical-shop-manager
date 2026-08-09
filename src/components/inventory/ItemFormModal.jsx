@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Eye, Droplet, Trash2 } from "lucide-react";
-import { Modal, Field, VoiceInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
+import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS } from "../../lib/rxConstants";
+import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
 
 const CONTACT_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
 const CONTACT_TYPES = ["Spherical", "Toric", "Multifocal"];
@@ -51,8 +52,8 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
         <div className="border-t border-dashed border-border pt-3 mt-1 mb-1">
           <p className="text-[11px] font-medium uppercase tracking-wide mb-2 flex items-center gap-1 text-slate"><Eye size={12} /> Lens details</p>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Power"><TextInput value={f.power} onChange={(e) => set("power")(e.target.value)} placeholder="-2.00" /></Field>
-            <Field label="Add power"><TextInput value={f.addPower} onChange={(e) => set("addPower")(e.target.value)} placeholder="+2.00" /></Field>
+            <Field label="Power"><VoiceRxInput value={f.power} onChange={set("power")} placeholder="-2.00" parse={parseRxPower} /></Field>
+            <Field label="Add power"><VoiceRxInput value={f.addPower} onChange={set("addPower")} placeholder="+2.00" parse={parseRxAdd} /></Field>
           </div>
           <Field label="Index">
             <Select value={f.lensIndex} onChange={(e) => set("lensIndex")(e.target.value)}>
@@ -85,7 +86,7 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
         <div className="border-t border-dashed border-border pt-3 mt-1 mb-1">
           <p className="text-[11px] font-medium uppercase tracking-wide mb-2 flex items-center gap-1 text-slate"><Droplet size={12} /> Contact lens details</p>
           <div className="grid grid-cols-3 gap-2">
-            <Field label="Power"><TextInput value={f.power} onChange={(e) => set("power")(e.target.value)} placeholder="-2.00" /></Field>
+            <Field label="Power"><VoiceRxInput value={f.power} onChange={set("power")} placeholder="-2.00" parse={parseRxPower} /></Field>
             <Field label="BC (mm)"><TextInput value={f.baseCurve} onChange={(e) => set("baseCurve")(e.target.value)} placeholder="8.6" /></Field>
             <Field label="DIA (mm)"><TextInput value={f.diameter} onChange={(e) => set("diameter")(e.target.value)} placeholder="14.2" /></Field>
           </div>
