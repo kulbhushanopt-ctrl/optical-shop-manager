@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode } from "lucide-react";
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
@@ -8,6 +8,7 @@ import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
 import TextCommandModal from "./TextCommandModal";
+import PrintLabelsModal from "./PrintLabelsModal";
 
 function voicePrefill(parsed) {
   return {
@@ -36,6 +37,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showTextAdd, setShowTextAdd] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
 
   const filtered = inventory.filter((i) => filter === "all" || i.type === filter);
 
@@ -102,6 +104,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         action={
           isOwner ? (
             <div className="flex items-center gap-2">
+              <RoundIconBtn onClick={() => setShowLabels(true)}>
+                <Barcode size={15} />
+              </RoundIconBtn>
               <RoundIconBtn onClick={() => setShowImport(true)}>
                 <FileSpreadsheet size={15} />
               </RoundIconBtn>
@@ -222,6 +227,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
           }}
         />
       )}
+      {isOwner && showLabels && <PrintLabelsModal inventory={inventory} onClose={() => setShowLabels(false)} />}
     </div>
   );
 }

@@ -1,8 +1,13 @@
-import React, { useState } from "react";
-import { Eye, Droplet, Trash2 } from "lucide-react";
+import React, { Suspense, lazy, useState } from "react";
+import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
+
+// The barcode decoder library is large and only needed once someone
+// actually opens the scanner, so it's split into its own chunk instead of
+// bloating every page load.
+const BarcodeScanner = lazy(() => import("../shared/BarcodeScanner"));
 
 const CONTACT_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
 const CONTACT_TYPES = ["Spherical", "Toric", "Multifocal"];
@@ -26,6 +31,7 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
   // prefill (voice add) -- merge over blank defaults either way so missing
   // fields (e.g. `low`, `coatings`) don't end up undefined.
   const [f, setF] = useState({ ...BLANK_ITEM, ...(initial || {}) });
+  const [showScanner, setShowScanner] = useState(false);
   const set = (k) => (v) => setF({ ...f, [k]: v });
   const toggleCoating = (c) => {
     const coatings = f.coatings || [];
@@ -48,9 +54,32 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
         <Field label="Model"><VoiceInput value={f.model} onChange={set("model")} placeholder={ITEM_PLACEHOLDERS[f.type]?.model || "Model"} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="SKU"><VoiceInput value={f.sku} onChange={set("sku")} placeholder={ITEM_PLACEHOLDERS[f.type]?.sku || "SKU-1001"} /></Field>
+        <Field label="SKU">
+          <div className="flex gap-1.5">
+            <div className="flex-1"><VoiceInput value={f.sku} onChange={set("sku")} placeholder={ITEM_PLACEHOLDERS[f.type]?.sku || "SKU-1001"} /></div>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-lensSoft text-lens"
+              aria-label="Scan barcode"
+            >
+              <Barcode size={15} />
+            </button>
+          </div>
+        </Field>
         <Field label="HSN code"><VoiceInput value={f.hsnCode || ""} onChange={set("hsnCode")} placeholder="9004" /></Field>
       </div>
+      {showScanner && (
+        <Suspense fallback={null}>
+          <BarcodeScanner
+            onDetect={(code) => {
+              setF((prev) => ({ ...prev, sku: code }));
+              setShowScanner(false);
+            }}
+            onClose={() => setShowScanner(false)}
+          />
+        </Suspense>
+      )}
 
       {f.type === "lens" && (
         <div className="border-t border-dashed border-border pt-3 mt-1 mb-1">

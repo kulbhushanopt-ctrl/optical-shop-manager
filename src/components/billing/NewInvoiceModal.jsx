@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { Plus, X } from "lucide-react";
+import React, { Suspense, lazy, useState } from "react";
+import { Plus, X, Barcode } from "lucide-react";
 import { createPatient } from "../../lib/api";
 import { Modal, Field, TextInput, Select, PrimaryBtn, SecondaryBtn } from "../shared/ui";
 import { currency, todayISO, formatDate, invoiceStatus, PAYMENT_METHODS, paymentMethodLabel } from "../../lib/format";
+
+const BarcodeScanner = lazy(() => import("../shared/BarcodeScanner"));
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
@@ -22,6 +24,8 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   const [prescriptionId, setPrescriptionId] = useState("");
   const [collectLater, setCollectLater] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanError, setScanError] = useState("");
 
   const addNewPatient = async () => {
     if (!newPatientName.trim()) return;
@@ -45,6 +49,16 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
       setLines([...lines, { itemId: item.id, name: `${item.brand} ${item.model}`, price: item.price, qty: 1, maxStock: item.stock, hsnCode: item.hsnCode || "", discount: 0 }]);
     }
     setPickerOpen(false);
+  };
+  const handleScan = (code) => {
+    setShowScanner(false);
+    const match = inventory.find((i) => i.stock > 0 && (i.sku || "").trim().toLowerCase() === code.trim().toLowerCase());
+    if (match) {
+      addLine(match);
+      setScanError("");
+    } else {
+      setScanError(`No in-stock item found for code "${code}".`);
+    }
   };
   const addCustomLine = () => {
     if (!customName.trim() || customPrice === "") return;
@@ -130,8 +144,17 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
           <button onClick={() => setPickerOpen(true)} className="text-xs font-medium flex items-center gap-1 text-lens">
             <Plus size={13} /> From stock
           </button>
+          <button onClick={() => setShowScanner(true)} className="text-xs font-medium flex items-center gap-1 text-lens">
+            <Barcode size={13} /> Scan
+          </button>
         </div>
       </div>
+      {scanError && <p className="text-[11px] text-warn -mt-2 mb-2">{scanError}</p>}
+      {showScanner && (
+        <Suspense fallback={null}>
+          <BarcodeScanner onDetect={handleScan} onClose={() => setShowScanner(false)} />
+        </Suspense>
+      )}
 
       {customOpen && (
         <div className="rounded-xl p-3 mb-3 bg-focusSoft border border-focus/40">
