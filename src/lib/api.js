@@ -291,17 +291,3 @@ export async function deleteInvoice(id) {
   const { error } = await supabase.from("invoices").delete().eq("id", id);
   if (error) throw error;
 }
-
-/* ---------- AI frame-temple scan ---------- */
-// Reads brand/model/color-code/size off a photo of a frame temple via the
-// scan-frame Edge Function. Returns { error: "not_configured", message }
-// until a GEMINI_API_KEY secret is set on the Supabase project -- that's a
-// normal, expected response, not a thrown error, so the UI can show a plain
-// message instead of an error toast.
-export async function scanFrameTemple(imageDataUrl) {
-  const { data, error } = await supabase.functions.invoke("scan-frame", {
-    body: { image: imageDataUrl },
-  });
-  if (error) throw error;
-  return data;
-}

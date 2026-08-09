@@ -1,10 +1,8 @@
 import React, { useState } from "react";
-import { Eye, Droplet, Trash2, Camera, Loader2, Sparkles } from "lucide-react";
+import { Eye, Droplet, Trash2 } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
-import { scanFrameTemple } from "../../lib/api";
-import CameraCapture from "../shared/CameraCapture";
 
 const CONTACT_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
 const CONTACT_TYPES = ["Spherical", "Toric", "Multifocal"];
@@ -32,40 +30,6 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
   };
   const valid = f.brand.trim() && f.model.trim() && f.price !== "" && f.stock !== "";
 
-  const [scanning, setScanning] = useState(false);
-  const [scanNotice, setScanNotice] = useState("");
-  const [showCamera, setShowCamera] = useState(false);
-
-  const handleScanPhoto = async (photo) => {
-    setShowCamera(false);
-    setScanning(true);
-    setScanNotice("");
-    try {
-      const result = await scanFrameTemple(photo);
-      if (result?.error === "not_configured") {
-        setScanNotice(result.message || "AI frame scanning isn't set up yet.");
-      } else if (result?.error) {
-        setScanNotice("Couldn't read that photo — please enter the details manually.");
-      } else {
-        const skuFromScan = [result.colorCode, result.size].filter(Boolean).join(" ");
-        setF((prev) => ({
-          ...prev,
-          brand: prev.brand || result.brand || prev.brand,
-          model: prev.model || result.model || prev.model,
-          sku: prev.sku || skuFromScan || prev.sku,
-        }));
-        if (!result.brand && !result.model && !result.colorCode && !result.size) {
-          setScanNotice("Couldn't make out any text in that photo — please enter the details manually.");
-        } else {
-          setScanNotice("Scanned — please review the fields below before saving.");
-        }
-      }
-    } catch (err) {
-      setScanNotice("Couldn't read that photo — please enter the details manually.");
-    }
-    setScanning(false);
-  };
-
   return (
     <Modal title={title} onClose={onClose}>
       <Field label="Type">
@@ -75,23 +39,6 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
           ))}
         </Select>
       </Field>
-
-      {(f.type === "frame" || f.type === "sunglasses") && (
-        <div className="mb-3.5">
-          <button
-            type="button"
-            onClick={() => setShowCamera(true)}
-            disabled={scanning}
-            className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
-          >
-            {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            {scanning ? "Reading photo…" : "Scan frame temple (AI)"}
-            {!scanning && <Sparkles size={12} />}
-          </button>
-          {scanNotice && <p className="text-[11px] text-slate mt-1.5">{scanNotice}</p>}
-          {showCamera && <CameraCapture onCapture={handleScanPhoto} onClose={() => setShowCamera(false)} />}
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Brand"><VoiceInput value={f.brand} onChange={set("brand")} placeholder={ITEM_PLACEHOLDERS[f.type]?.brand || "Brand"} /></Field>
