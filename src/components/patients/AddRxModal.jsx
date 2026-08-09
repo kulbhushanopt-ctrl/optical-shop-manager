@@ -7,13 +7,13 @@ import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../..
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 
-const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "osSphere", "osCyl", "osAxis", "osAdd", "pd"];
+const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "odVA", "osSphere", "osCyl", "osAxis", "osAdd", "osVA", "pd"];
 
 export default function AddRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState({
     chiefComplaint: "",
-    odSphere: "", odCyl: "", odAxis: "", odAdd: "",
-    osSphere: "", osCyl: "", osAxis: "", osAdd: "",
+    odSphere: "", odCyl: "", odAxis: "", odAdd: "", odVA: "",
+    osSphere: "", osCyl: "", osAxis: "", osAdd: "", osVA: "",
     pd: "", notes: "",
     lensType: "", coatings: [], lensIndex: "", tint: "",
     framePhoto: null,
@@ -102,6 +102,10 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         <Field label="OS Sphere"><VoiceRxInput value={f.osSphere} onChange={set("osSphere")} placeholder="-1.75" parse={parseRxPower} /></Field>
         <Field label="OS Cyl"><VoiceRxInput value={f.osCyl} onChange={set("osCyl")} placeholder="-0.25" parse={parseRxPower} /></Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="OD Vision (after correction)"><VoiceInput value={f.odVA} onChange={set("odVA")} placeholder="6/6" /></Field>
+        <Field label="OS Vision (after correction)"><VoiceInput value={f.osVA} onChange={set("osVA")} placeholder="6/6" /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="OD Add"><VoiceRxInput value={f.odAdd} onChange={set("odAdd")} placeholder="+2.00" parse={parseRxAdd} /></Field>

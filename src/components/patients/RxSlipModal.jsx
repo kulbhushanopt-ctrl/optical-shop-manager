@@ -15,9 +15,9 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
     `\nPatient: ${patient.name}${age != null ? ` (Age ${age})` : ""}\n` +
     `Date: ${formatDate(rx.date)}\n` +
     (rx.chiefComplaint ? `Chief complaint: ${rx.chiefComplaint}\n` : "") +
-    `\n                 SPH      CYL      AXIS/ADD\n` +
-    `Right Eye (OD)   ${rx.odSphere || "—"}      ${rx.odCyl || "—"}      ${rx.odAxis || "—"}${rx.odAdd ? ` / ${rx.odAdd}` : ""}\n` +
-    `Left Eye (OS)    ${rx.osSphere || "—"}      ${rx.osCyl || "—"}      ${rx.osAxis || "—"}${rx.osAdd ? ` / ${rx.osAdd}` : ""}\n` +
+    `\n                 SPH      CYL      AXIS/ADD      VA\n` +
+    `Right Eye (OD)   ${rx.odSphere || "—"}      ${rx.odCyl || "—"}      ${rx.odAxis || "—"}${rx.odAdd ? ` / ${rx.odAdd}` : ""}      ${rx.odVA || "—"}\n` +
+    `Left Eye (OS)    ${rx.osSphere || "—"}      ${rx.osCyl || "—"}      ${rx.osAxis || "—"}${rx.osAdd ? ` / ${rx.osAdd}` : ""}      ${rx.osVA || "—"}\n` +
     (rx.pd ? `PD: ${rx.pd}mm\n` : "") +
     ((rx.lensType || rx.coatings?.length || rx.lensIndex || rx.tint)
       ? `Lens: ${[rx.lensType, rx.lensIndex && `${rx.lensIndex} index`, rx.tint, rx.coatings?.join(" + ")].filter(Boolean).join(", ")}\n`
@@ -66,23 +66,26 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
           <p className="text-[11px] mb-3 text-ink"><span className="font-semibold">Chief complaint:</span> {rx.chiefComplaint}</p>
         )}
 
-        <div className="grid grid-cols-4 gap-1 text-[10px] mb-1.5 font-mono">
+        <div className="grid grid-cols-5 gap-1 text-[10px] mb-1.5 font-mono">
           <span></span>
           <span className="text-slate">SPH</span>
           <span className="text-slate">CYL</span>
           <span className="text-slate">AXIS / ADD</span>
+          <span className="text-slate">VA</span>
         </div>
-        <div className="grid grid-cols-4 gap-1 text-sm p-2 rounded-lg mb-1 bg-lensSoft text-ink font-mono">
+        <div className="grid grid-cols-5 gap-1 text-sm p-2 rounded-lg mb-1 bg-lensSoft text-ink font-mono">
           <span className="font-semibold">Right Eye (OD)</span>
           <span>{rx.odSphere || "—"}</span>
           <span>{rx.odCyl || "—"}</span>
           <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span>
+          <span>{rx.odVA || "—"}</span>
         </div>
-        <div className="grid grid-cols-4 gap-1 text-sm p-2 rounded-lg mb-3 bg-lensSoft text-ink font-mono">
+        <div className="grid grid-cols-5 gap-1 text-sm p-2 rounded-lg mb-3 bg-lensSoft text-ink font-mono">
           <span className="font-semibold">Left Eye (OS)</span>
           <span>{rx.osSphere || "—"}</span>
           <span>{rx.osCyl || "—"}</span>
           <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span>
+          <span>{rx.osVA || "—"}</span>
         </div>
 
         {rx.pd && <p className="text-xs mb-1 text-slate"><span className="font-semibold">PD:</span> {rx.pd}mm</p>}

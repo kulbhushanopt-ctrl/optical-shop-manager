@@ -16,7 +16,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const PROMPT = `You are reading a photo of an eyeglass prescription (a printed or handwritten optometrist's Rx slip). It typically has two rows for the right eye (labeled OD, RE, or R) and left eye (OS, LE, or L), each with SPH (sphere), CYL (cylinder), and AXIS values, and sometimes an ADD (near addition power) value. There is sometimes also a PD (pupillary distance) value in mm. Read the values carefully and respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"odSphere": string|null, "odCyl": string|null, "odAxis": string|null, "odAdd": string|null, "osSphere": string|null, "osCyl": string|null, "osAxis": string|null, "osAdd": string|null, "pd": string|null}. Sphere and cylinder values should include their sign (+ or -) and two decimal places (e.g. "-2.00", "+1.25"). Axis should be a plain number from 0-180. Only report values you can actually read clearly in the image -- use null for anything illegible, missing, or you're not confident about. Never guess or invent a value.`;
+const PROMPT = `You are reading a photo of an eyeglass prescription (a printed or handwritten optometrist's Rx slip). It typically has two rows for the right eye (labeled OD, RE, or R) and left eye (OS, LE, or L), each with SPH (sphere), CYL (cylinder), and AXIS values, and sometimes an ADD (near addition power) value. There is sometimes also a PD (pupillary distance) value in mm, and a VA (visual acuity after correction) value per eye, usually written as a fraction like "6/6" or "6/9" (or the imperial equivalent, e.g. "20/20"). Read the values carefully and respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"odSphere": string|null, "odCyl": string|null, "odAxis": string|null, "odAdd": string|null, "odVA": string|null, "osSphere": string|null, "osCyl": string|null, "osAxis": string|null, "osAdd": string|null, "osVA": string|null, "pd": string|null}. Sphere and cylinder values should include their sign (+ or -) and two decimal places (e.g. "-2.00", "+1.25"). Axis should be a plain number from 0-180. Only report values you can actually read clearly in the image -- use null for anything illegible, missing, or you're not confident about. Never guess or invent a value.`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -68,7 +68,11 @@ Deno.serve(async (req: Request) => {
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = { odSphere: null, odCyl: null, odAxis: null, odAdd: null, osSphere: null, osCyl: null, osAxis: null, osAdd: null, pd: null };
+      parsed = {
+        odSphere: null, odCyl: null, odAxis: null, odAdd: null, odVA: null,
+        osSphere: null, osCyl: null, osAxis: null, osAdd: null, osVA: null,
+        pd: null,
+      };
     }
 
     return json(parsed);

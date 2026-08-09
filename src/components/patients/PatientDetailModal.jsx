@@ -92,16 +92,16 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
               {rx.chiefComplaint && (
                 <p className="text-[11px] mb-2 text-ink"><span className="font-semibold">Complaint:</span> {rx.chiefComplaint}</p>
               )}
-              <div className="grid grid-cols-4 gap-1 text-[10px] mb-1 font-mono">
-                <span></span><span className="text-slate">SPH</span><span className="text-slate">CYL</span><span className="text-slate">AXIS/ADD</span>
+              <div className="grid grid-cols-5 gap-1 text-[10px] mb-1 font-mono">
+                <span></span><span className="text-slate">SPH</span><span className="text-slate">CYL</span><span className="text-slate">AXIS/ADD</span><span className="text-slate">VA</span>
               </div>
-              <div className="grid grid-cols-4 gap-1 text-xs mb-0.5 text-ink font-mono">
+              <div className="grid grid-cols-5 gap-1 text-xs mb-0.5 text-ink font-mono">
                 <span className="font-semibold">OD</span><span>{rx.odSphere || "—"}</span><span>{rx.odCyl || "—"}</span>
-                <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span>
+                <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span><span>{rx.odVA || "—"}</span>
               </div>
-              <div className="grid grid-cols-4 gap-1 text-xs text-ink font-mono">
+              <div className="grid grid-cols-5 gap-1 text-xs text-ink font-mono">
                 <span className="font-semibold">OS</span><span>{rx.osSphere || "—"}</span><span>{rx.osCyl || "—"}</span>
-                <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span>
+                <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span><span>{rx.osVA || "—"}</span>
               </div>
               {rx.pd && <p className="text-[11px] mt-1.5 text-slate">PD: {rx.pd}mm</p>}
               {(rx.lensType || rx.coatings?.length > 0 || rx.lensIndex || rx.tint) && (
