@@ -18,7 +18,11 @@ export default function BranchOnboarding({ onCreated }) {
       const branch = await createBranch({ name: name.trim(), address: address.trim(), phone: phone.trim() });
       onCreated(branch);
     } catch (e) {
-      setError("Couldn't create branch — please try again.");
+      if (e.code === "42501") {
+        setError("This app is invite-only. Ask your shop's owner to invite your email address as staff, then sign in again.");
+      } else {
+        setError("Couldn't create branch — please try again.");
+      }
     }
     setBusy(false);
   };
