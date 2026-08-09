@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Phone, MapPin, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { Modal, Avatar } from "../shared/ui";
-import { formatDate } from "../../lib/format";
+import { formatDate, calculateAge } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
 import AddRxModal from "./AddRxModal";
@@ -41,6 +41,7 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
         <div className="flex-1 min-w-0">
           <div className="text-xs flex items-center gap-1 text-slate">
             <Phone size={11} /> {patient.phone || "No phone on file"}
+            {calculateAge(patient.dob) != null && <span> · Age {calculateAge(patient.dob)}</span>}
           </div>
           {patient.address && (
             <div className="text-xs mt-1 flex items-start gap-1 text-slate">

@@ -7,6 +7,17 @@ export function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function calculateAge(dob) {
+  if (!dob) return null;
+  const birth = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dob) ? `${dob}T00:00:00` : dob);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
 export function formatDate(iso) {
   if (!iso) return "";
   // Treat a plain YYYY-MM-DD as local midnight so it doesn't shift a day

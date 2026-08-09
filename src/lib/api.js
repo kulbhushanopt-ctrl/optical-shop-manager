@@ -138,6 +138,7 @@ export async function createPatient(branchId, patient) {
       address: patient.address || null,
       notes: patient.notes || null,
       photo: patient.photo || null,
+      dob: patient.dob || null,
       prescriptions: patient.prescriptions || [],
     })
     .select()

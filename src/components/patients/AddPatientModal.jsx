@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { compressImage } from "../../lib/image";
-import { Modal, Field, VoiceInput, VoiceTextArea, PrimaryBtn } from "../shared/ui";
+import { Modal, Field, VoiceInput, VoiceTextArea, TextInput, PrimaryBtn } from "../shared/ui";
+import { calculateAge } from "../../lib/format";
 
 export default function AddPatientModal({ onClose, onSave, initial }) {
   const [name, setName] = useState(initial?.name || "");
   const [phone, setPhone] = useState(initial?.phone || "");
+  const [dob, setDob] = useState(initial?.dob || "");
   const [address, setAddress] = useState(initial?.address || "");
   const [notes, setNotes] = useState(initial?.notes || "");
   const [photo, setPhoto] = useState(initial?.photo || null);
@@ -53,6 +55,9 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
       <Field label="Phone">
         <VoiceInput value={phone} onChange={setPhone} placeholder="+91 98765 43210" />
       </Field>
+      <Field label={`Date of birth${dob ? ` (age ${calculateAge(dob)})` : ""}`}>
+        <TextInput type="date" value={dob} onChange={(e) => setDob(e.target.value)} max={new Date().toISOString().slice(0, 10)} />
+      </Field>
       <Field label="Address">
         <VoiceTextArea value={address} onChange={setAddress} placeholder="House no., street, city, state, PIN code" rows={2} />
       </Field>
@@ -62,7 +67,7 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
       <PrimaryBtn
         full
         disabled={!name.trim()}
-        onClick={() => onSave({ name: name.trim(), phone: phone.trim(), address: address.trim(), notes: notes.trim(), photo })}
+        onClick={() => onSave({ name: name.trim(), phone: phone.trim(), dob: dob || null, address: address.trim(), notes: notes.trim(), photo })}
       >
         Save patient
       </PrimaryBtn>

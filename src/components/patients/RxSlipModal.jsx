@@ -2,16 +2,17 @@ import React, { useRef } from "react";
 import { Glasses, Check } from "lucide-react";
 import { Modal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
-import { formatDate } from "../../lib/format";
+import { formatDate, calculateAge } from "../../lib/format";
 
 export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
   const slipRef = useRef(null);
+  const age = calculateAge(patient.dob);
 
   const slipText =
     `${shopInfo?.name || "Optical Shop"} — Prescription\n` +
     (shopInfo?.address ? `${shopInfo.address}\n` : "") +
     (shopInfo?.phone ? `Ph: ${shopInfo.phone}\n` : "") +
-    `\nPatient: ${patient.name}\n` +
+    `\nPatient: ${patient.name}${age != null ? ` (Age ${age})` : ""}\n` +
     `Date: ${formatDate(rx.date)}\n\n` +
     `                 SPH      CYL      AXIS/ADD\n` +
     `Right Eye (OD)   ${rx.odSphere || "—"}      ${rx.odCyl || "—"}      ${rx.odAxis || "—"}${rx.odAdd ? ` / ${rx.odAdd}` : ""}\n` +
@@ -48,7 +49,10 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-[10px] uppercase tracking-wide text-slate">Patient</p>
-            <p className="font-display text-sm font-semibold text-ink">{patient.name}</p>
+            <p className="font-display text-sm font-semibold text-ink">
+              {patient.name}
+              {age != null && <span className="font-normal text-slate"> · Age {age}</span>}
+            </p>
             {patient?.phone && <p className="text-[11px] mt-0.5 text-slate">Ph: {patient.phone}</p>}
           </div>
           <div className="text-right">
