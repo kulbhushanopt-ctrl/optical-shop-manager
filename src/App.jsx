@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Home, Users, Receipt, Package } from "lucide-react";
-import { supabase } from "./lib/supabaseClient";
+import { Home, Users, Receipt, Package, AlertTriangle } from "lucide-react";
+import { supabase, supabaseConfigError } from "./lib/supabaseClient";
 import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices } from "./lib/api";
 import { Spinner, BottomNav } from "./components/shared/ui";
 import AuthScreen from "./components/AuthScreen";
@@ -10,6 +10,20 @@ import HomeTab from "./components/HomeTab";
 import PatientsTab from "./components/patients/PatientsTab";
 import InventoryTab from "./components/inventory/InventoryTab";
 import BillingTab from "./components/billing/BillingTab";
+
+function ConfigErrorScreen({ message }) {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center px-6 bg-paper font-sans">
+      <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-5 text-center">
+        <div className="bg-warnSoft rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+          <AlertTriangle size={22} className="text-warn" />
+        </div>
+        <h1 className="font-display text-base font-bold text-ink mb-1">Setup required</h1>
+        <p className="text-xs text-slate">{message}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function OpticalShopApp() {
   const [checking, setChecking] = useState(true);
@@ -33,6 +47,7 @@ export default function OpticalShopApp() {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setChecking(false);
@@ -50,6 +65,8 @@ export default function OpticalShopApp() {
   useEffect(() => {
     if (session) loadMemberships();
   }, [session, loadMemberships]);
+
+  if (supabaseConfigError) return <ConfigErrorScreen message={supabaseConfigError} />;
 
   const switchBranch = (branchId) => {
     setCurrentBranchId(branchId);
