@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard } from "lucide-react";
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
@@ -7,6 +7,7 @@ import { ITEM_TYPES, itemTypeLabel } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
+import TextCommandModal from "./TextCommandModal";
 
 function voicePrefill(parsed) {
   return {
@@ -34,6 +35,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [voiceDraft, setVoiceDraft] = useState(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showTextAdd, setShowTextAdd] = useState(false);
 
   const filtered = inventory.filter((i) => filter === "all" || i.type === filter);
 
@@ -48,21 +50,29 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
     }
   };
 
-  const { listening, supported: voiceSupported, start: startVoiceCommand } = useVoiceInput(async (text) => {
-    setVoiceBusy(true);
-    setError("");
+  // Shared by the mic and typed-text entry points -- both just need a
+  // sentence turned into a prefilled item, or an error message to show.
+  const runCommand = async (text) => {
     try {
       const result = await parseInventoryCommand(text);
       if (result?.error === "not_configured") {
-        setError(result.message || "AI voice entry isn't set up yet.");
-      } else if (result?.error) {
-        setError("Didn't catch that — please try again or add the item manually.");
-      } else {
-        setVoiceDraft(voicePrefill(result));
+        return result.message || "AI entry isn't set up yet.";
       }
+      if (result?.error) {
+        return "Didn't catch that — please try again or add the item manually.";
+      }
+      setVoiceDraft(voicePrefill(result));
+      return null;
     } catch (e) {
-      setError("Didn't catch that — please try again or add the item manually.");
+      return "Didn't catch that — please try again or add the item manually.";
     }
+  };
+
+  const { listening, supported: voiceSupported, start: startVoiceCommand } = useVoiceInput(async (text) => {
+    setVoiceBusy(true);
+    setError("");
+    const errMsg = await runCommand(text);
+    if (errMsg) setError(errMsg);
     setVoiceBusy(false);
   });
   const saveEdit = async (updated) => {
@@ -94,6 +104,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
             <div className="flex items-center gap-2">
               <RoundIconBtn onClick={() => setShowImport(true)}>
                 <FileSpreadsheet size={15} />
+              </RoundIconBtn>
+              <RoundIconBtn onClick={() => setShowTextAdd(true)}>
+                <Keyboard size={15} />
               </RoundIconBtn>
               {voiceSupported && (
                 <RoundIconBtn onClick={startVoiceCommand} tone={listening ? "warn" : "default"}>
@@ -194,6 +207,16 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
           onImported={(saved) => {
             setInventory([...saved, ...inventory]);
             setShowImport(false);
+          }}
+        />
+      )}
+      {isOwner && showTextAdd && (
+        <TextCommandModal
+          onClose={() => setShowTextAdd(false)}
+          onParse={async (text) => {
+            const errMsg = await runCommand(text);
+            if (!errMsg) setShowTextAdd(false);
+            return errMsg;
           }}
         />
       )}
