@@ -3,10 +3,11 @@ import { Camera, Loader2 } from "lucide-react";
 import { compressImage } from "../../lib/image";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
-import { Modal, Field, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
+import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 
 export default function AddRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState({
+    chiefComplaint: "",
     odSphere: "", odCyl: "", odAxis: "", odAdd: "",
     osSphere: "", osCyl: "", osAxis: "", osAdd: "",
     pd: "", notes: "",
@@ -37,6 +38,9 @@ export default function AddRxModal({ onClose, onSave, initial }) {
 
   return (
     <Modal title={initial ? "Edit glasses prescription" : "Add glasses prescription"} onClose={onClose}>
+      <Field label="Chief complaint">
+        <VoiceInput value={f.chiefComplaint} onChange={set("chiefComplaint")} placeholder="Blurry distance vision, headaches, routine checkup…" />
+      </Field>
       <div className="grid grid-cols-3 gap-2">
         <Field label="OD Sphere"><VoiceRxInput value={f.odSphere} onChange={set("odSphere")} placeholder="-2.00" parse={parseRxPower} /></Field>
         <Field label="OD Cyl"><VoiceRxInput value={f.odCyl} onChange={set("odCyl")} placeholder="-0.50" parse={parseRxPower} /></Field>

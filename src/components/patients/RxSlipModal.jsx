@@ -13,8 +13,9 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
     (shopInfo?.address ? `${shopInfo.address}\n` : "") +
     (shopInfo?.phone ? `Ph: ${shopInfo.phone}\n` : "") +
     `\nPatient: ${patient.name}${age != null ? ` (Age ${age})` : ""}\n` +
-    `Date: ${formatDate(rx.date)}\n\n` +
-    `                 SPH      CYL      AXIS/ADD\n` +
+    `Date: ${formatDate(rx.date)}\n` +
+    (rx.chiefComplaint ? `Chief complaint: ${rx.chiefComplaint}\n` : "") +
+    `\n                 SPH      CYL      AXIS/ADD\n` +
     `Right Eye (OD)   ${rx.odSphere || "—"}      ${rx.odCyl || "—"}      ${rx.odAxis || "—"}${rx.odAdd ? ` / ${rx.odAdd}` : ""}\n` +
     `Left Eye (OS)    ${rx.osSphere || "—"}      ${rx.osCyl || "—"}      ${rx.osAxis || "—"}${rx.osAdd ? ` / ${rx.osAdd}` : ""}\n` +
     (rx.pd ? `PD: ${rx.pd}mm\n` : "") +
@@ -60,6 +61,10 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
             <p className="text-sm font-semibold text-ink font-mono">{formatDate(rx.date)}</p>
           </div>
         </div>
+
+        {rx.chiefComplaint && (
+          <p className="text-[11px] mb-3 text-ink"><span className="font-semibold">Chief complaint:</span> {rx.chiefComplaint}</p>
+        )}
 
         <div className="grid grid-cols-4 gap-1 text-[10px] mb-1.5 font-mono">
           <span></span>

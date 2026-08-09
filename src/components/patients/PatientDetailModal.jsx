@@ -89,6 +89,9 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
                   </div>
                 )}
               </div>
+              {rx.chiefComplaint && (
+                <p className="text-[11px] mb-2 text-ink"><span className="font-semibold">Complaint:</span> {rx.chiefComplaint}</p>
+              )}
               <div className="grid grid-cols-4 gap-1 text-[10px] mb-1 font-mono">
                 <span></span><span className="text-slate">SPH</span><span className="text-slate">CYL</span><span className="text-slate">AXIS/ADD</span>
               </div>
