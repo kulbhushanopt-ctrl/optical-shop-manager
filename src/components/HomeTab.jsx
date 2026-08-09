@@ -96,8 +96,6 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
           </div>
         )}
       </div>
-
-      <p className="text-center text-[10px] text-slate mt-6">Made by Kulbhushan</p>
     </div>
   );
 }

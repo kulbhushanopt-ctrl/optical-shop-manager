@@ -202,6 +202,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
           )}
           {tab === "inventory" && <InventoryTab inventory={inventory} setInventory={setInventory} branchId={branch.id} isOwner={isOwner} />}
         </div>
+        <p className="text-center text-[10px] text-slate py-1.5 bg-card border-t border-border">Made by Kulbhushan Sachdeva</p>
         <BottomNav tabs={tabs} active={tab} onChange={setTab} />
       </div>
     </div>
