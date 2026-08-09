@@ -1,0 +1,72 @@
+import React, { useState } from "react";
+import { updateBranch, signOut } from "../../lib/api";
+import { Modal, Field, TextInput, TextArea, PrimaryBtn, SecondaryBtn } from "../shared/ui";
+import StaffModal from "./StaffModal";
+
+export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId, onBranchUpdated }) {
+  const [name, setName] = useState(shopInfo.name || "");
+  const [address, setAddress] = useState(shopInfo.address || "");
+  const [phone, setPhone] = useState(shopInfo.phone || "");
+  const [gstin, setGstin] = useState(shopInfo.gstin || "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [showStaff, setShowStaff] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const updated = await updateBranch(branchId, {
+        name: name.trim(),
+        address: address.trim() || null,
+        phone: phone.trim() || null,
+        gstin: gstin.trim() || null,
+      });
+      onBranchUpdated(updated);
+      onClose();
+    } catch (e) {
+      setError("Couldn't save changes.");
+    }
+    setBusy(false);
+  };
+
+  if (showStaff) {
+    return <StaffModal branchId={branchId} branchName={shopInfo.name} onClose={() => setShowStaff(false)} />;
+  }
+
+  return (
+    <Modal title="Shop details" onClose={onClose}>
+      <Field label="Shop name">
+        <TextInput value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner} />
+      </Field>
+      <Field label="Address">
+        <TextArea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} disabled={!isOwner} />
+      </Field>
+      <Field label="Phone">
+        <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isOwner} />
+      </Field>
+      <Field label="GSTIN (optional)">
+        <TextInput value={gstin} onChange={(e) => setGstin(e.target.value)} disabled={!isOwner} />
+      </Field>
+      {error && <p className="text-xs text-warn mb-3">{error}</p>}
+
+      <div className="space-y-2">
+        {isOwner && (
+          <PrimaryBtn full disabled={busy || !name.trim()} onClick={save}>
+            {busy ? "Saving…" : "Save changes"}
+          </PrimaryBtn>
+        )}
+
+        {isOwner && (
+          <SecondaryBtn full onClick={() => setShowStaff(true)}>
+            Manage staff
+          </SecondaryBtn>
+        )}
+      </div>
+
+      <button onClick={() => signOut()} className="text-xs font-medium text-warn mt-4 mx-auto block">
+        Sign out
+      </button>
+    </Modal>
+  );
+}

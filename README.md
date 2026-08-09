@@ -1,0 +1,40 @@
+# Optical Shop Manager
+
+A mobile-first React app for running an optical / eyewear shop: patient records with
+prescription history, inventory, GST billing, and sales reporting — backed by Supabase
+(Postgres + Auth + Row Level Security) so multiple branches and staff can share data securely.
+
+## Features
+
+- **Auth** — email/password sign-in and sign-up (Supabase Auth)
+- **Branches & staff** — every shop is a "branch"; the creator is its owner and can invite
+  staff, manage members, and switch between multiple branches
+- **Patients** — records with photo, contact info, notes, and a full prescription history
+  (sphere / cylinder / axis / PD / add power); printable prescription slips
+- **Inventory** — frames, sunglasses, lenses, contact lenses, and accessories with stock
+  levels, low-stock alerts, and HSN codes
+- **Billing** — invoices built from inventory or custom line items, optional GST (CGST/SGST),
+  partial payment tracking, printable invoices
+- **Sales reports** — totals by day/week/month/custom range, exportable to Excel
+
+## Tech stack
+
+- React 18 + Vite
+- Tailwind CSS
+- Supabase (Postgres, Auth, Row Level Security)
+- `xlsx` for report export, `jspdf`/`html2canvas` for printable slips
+
+## Getting started
+
+```bash
+npm install
+cp .env.example .env   # fill in your Supabase project URL and anon key
+npm run dev
+```
+
+## Database
+
+This app expects the following tables to already exist in your Supabase project, each with
+Row Level Security enabled: `branches`, `branch_members`, `branch_invites`, `patients`,
+`inventory`, `invoices`. Access is scoped per-branch — members can read shared data, and only
+branch owners can manage inventory, staff, and delete records.
