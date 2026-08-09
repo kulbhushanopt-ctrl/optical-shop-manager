@@ -1,8 +1,10 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Glasses, Check, Trash2 } from "lucide-react";
+import { Glasses, Check, Trash2, MessageCircle } from "lucide-react";
 import { Modal, Field, TextInput, PrimaryBtn, ConfirmModal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
 import { currency, formatDate, statusTone, ORDER_STATUSES, orderStatusLabel, orderStatusTone } from "../../lib/format";
+import { orderStatusMessage } from "../../lib/messages";
+import { openWhatsapp } from "../../lib/share";
 
 export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, onChangeOrderStatus, onDelete, shopInfo, patients }) {
   const invoiceRef = useRef(null);
@@ -87,6 +89,23 @@ export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, 
               })}
             </div>
           </Field>
+          <button
+            type="button"
+            onClick={() =>
+              openWhatsapp(
+                orderStatusMessage({
+                  shopName: shopInfo?.name,
+                  patientName: invoice.patientName,
+                  orderStatus: invoice.orderStatus,
+                  reviewLink: shopInfo?.google_review_link,
+                }),
+                patient?.phone
+              )
+            }
+            className="w-full py-2.5 rounded-xl text-xs font-semibold bg-lensSoft text-lens flex items-center justify-center gap-1.5"
+          >
+            <MessageCircle size={13} /> Send WhatsApp update ({orderStatusLabel(invoice.orderStatus)})
+          </button>
         </div>
       )}
 

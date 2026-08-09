@@ -42,6 +42,12 @@ export async function tryShareFiles(files, meta) {
   return false;
 }
 
-export function openWhatsapp(text) {
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+// If `phone` is given, opens a chat with that contact directly instead of
+// letting the user pick one. Assumes a 10-digit number without a country
+// code is Indian (the app's target market) and prefixes 91; anything else
+// is passed through digits-only as-is.
+export function openWhatsapp(text, phone) {
+  const digits = (phone || "").replace(/\D/g, "");
+  const target = digits ? (digits.length === 10 ? `91${digits}` : digits) : "";
+  window.open(`https://wa.me/${target}?text=${encodeURIComponent(text)}`, "_blank");
 }

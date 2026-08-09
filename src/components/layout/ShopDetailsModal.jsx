@@ -8,6 +8,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
   const [address, setAddress] = useState(shopInfo.address || "");
   const [phone, setPhone] = useState(shopInfo.phone || "");
   const [gstin, setGstin] = useState(shopInfo.gstin || "");
+  const [googleReviewLink, setGoogleReviewLink] = useState(shopInfo.google_review_link || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showStaff, setShowStaff] = useState(false);
@@ -21,6 +22,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
         address: address.trim() || null,
         phone: phone.trim() || null,
         gstin: gstin.trim() || null,
+        google_review_link: googleReviewLink.trim() || null,
       });
       onBranchUpdated(updated);
       onClose();
@@ -47,6 +49,14 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
       </Field>
       <Field label="GSTIN (optional)">
         <TextInput value={gstin} onChange={(e) => setGstin(e.target.value)} disabled={!isOwner} />
+      </Field>
+      <Field label="Google review link (optional)">
+        <TextInput
+          value={googleReviewLink}
+          onChange={(e) => setGoogleReviewLink(e.target.value)}
+          placeholder="https://g.page/r/.../review"
+          disabled={!isOwner}
+        />
       </Field>
       {error && <p className="text-xs text-warn mb-3">{error}</p>}
 
