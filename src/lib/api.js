@@ -388,3 +388,16 @@ export async function parseInventoryCommand(text) {
   if (error) throw error;
   return data;
 }
+
+/* ---------- AI prescription scan ---------- */
+// Reads OD/OS sphere, cylinder, axis, add-power, and PD off a photo of a
+// prescription slip via the scan-prescription Edge Function. Returns
+// { error: "not_configured", message } until a GEMINI_API_KEY secret is set
+// on the Supabase project -- that's a normal, expected response.
+export async function scanPrescription(imageDataUrl) {
+  const { data, error } = await supabase.functions.invoke("scan-prescription", {
+    body: { image: imageDataUrl },
+  });
+  if (error) throw error;
+  return data;
+}
