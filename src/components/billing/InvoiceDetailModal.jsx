@@ -52,7 +52,10 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
     `\nCustomer: ${invoice.patientName}\n` +
     (patient?.phone ? `Phone: ${patient.phone}\n` : "") +
     (patient?.address ? `Address: ${patient.address}\n` : "") +
-    `Date: ${formatDate(invoice.date)}\n\n` +
+    `Date: ${formatDate(invoice.date)}\n` +
+    (rx
+      ? `\nPrescription (${formatDate(rx.date)})\nRight Eye (OD): SPH ${rx.odSphere || "—"} CYL ${rx.odCyl || "—"} AXIS ${rx.odAxis || "—"}${rx.odAdd ? ` ADD ${rx.odAdd}` : ""}\nLeft Eye (OS): SPH ${rx.osSphere || "—"} CYL ${rx.osCyl || "—"} AXIS ${rx.osAxis || "—"}${rx.osAdd ? ` ADD ${rx.osAdd}` : ""}\n`
+      : "\n") +
     invoice.items
       .map((l) => `${l.name}${l.hsnCode ? ` (HSN ${l.hsnCode})` : ""} x${l.qty}  ${currency(l.price * l.qty)}${l.discount ? `  -${currency(l.discount)} disc` : ""}`)
       .join("\n") +
@@ -63,10 +66,7 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
     `Total: ${currency(invoice.total)}\n` +
     `Amount paid: ${currency(invoice.amountPaid || 0)}\n` +
     `Balance left: ${currency(balanceLeft)}\n` +
-    `Status: ${invoice.status.toUpperCase()}` +
-    (rx
-      ? `\n\nPrescription (${formatDate(rx.date)})\nRight Eye (OD): SPH ${rx.odSphere || "—"} CYL ${rx.odCyl || "—"} AXIS ${rx.odAxis || "—"}\nLeft Eye (OS): SPH ${rx.osSphere || "—"} CYL ${rx.osCyl || "—"} AXIS ${rx.osAxis || "—"}`
-      : "");
+    `Status: ${invoice.status.toUpperCase()}`;
 
   return (
     <Modal title={`Invoice · ${invoice.patientName}`} onClose={onClose} wide>
@@ -145,6 +145,74 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
             <p className="text-sm font-semibold text-ink font-mono">{formatDate(invoice.date)}</p>
           </div>
         </div>
+
+        {rx && (
+          <div className="border-t-[1.5px] border-dashed border-border pt-3.5 mb-4">
+            <p className="font-display text-sm font-bold mb-1 text-ink">Prescription</p>
+            <p className="text-[10px] uppercase tracking-wide mb-2 text-slate">{formatDate(rx.date)}</p>
+            <div className="rounded-lg overflow-hidden border border-lens/25 mb-2">
+              <table className="w-full table-fixed text-[11px] font-mono border-collapse">
+                <colgroup>
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "16.4%" }} />
+                  <col style={{ width: "16.4%" }} />
+                  <col style={{ width: "16.4%" }} />
+                  <col style={{ width: "16.4%" }} />
+                  <col style={{ width: "16.4%" }} />
+                </colgroup>
+                <thead>
+                  <tr className="bg-lensSoft">
+                    <th className="py-1 px-1.5"></th>
+                    <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">SPH</th>
+                    <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">CYL</th>
+                    <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">AXIS</th>
+                    <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">ADD</th>
+                    <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">VA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-lens/20">
+                    <td className="py-1 px-1.5 font-semibold text-ink">OD</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odSphere || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odCyl || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odAxis || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odAdd || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odVA || "—"}</td>
+                  </tr>
+                  <tr className="border-t border-lens/20">
+                    <td className="py-1 px-1.5 font-semibold text-ink">OS</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osSphere || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osCyl || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osAxis || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osAdd || "—"}</td>
+                    <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osVA || "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {rx.pd && <p className="text-[11px] text-slate"><span className="font-semibold">PD:</span> {rx.pd}mm</p>}
+            {rx.lensType && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className="w-[11px] h-[11px] border-[1.5px] border-ink rounded-[3px] flex items-center justify-center flex-shrink-0">
+                  <Check size={8} className="text-ink" strokeWidth={3} />
+                </div>
+                <span className="text-[11px] font-medium text-slate">{rx.lensType}</span>
+              </div>
+            )}
+            {(rx.coatings?.length > 0 || rx.lensIndex || rx.tint) && (
+              <p className="text-[11px] mt-1 text-slate">
+                <span className="font-semibold">Lens:</span>{" "}
+                {[rx.lensIndex && `${rx.lensIndex} index`, rx.tint, rx.coatings?.length ? rx.coatings.join(" + ") : null].filter(Boolean).join(", ")}
+              </p>
+            )}
+            {rx.framePhoto && (
+              <div className="mt-2">
+                <p className="text-[10px] uppercase tracking-wide mb-1 text-slate">Booked frame</p>
+                <img src={rx.framePhoto} alt="Booked frame" className="w-20 h-20 rounded-[10px] object-cover border border-border" />
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 text-[10px] mb-1.5 font-mono">
           <span className="text-slate">ITEM</span>
@@ -225,45 +293,6 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
                 <span className="text-ink text-right">{currency(g.totalGst)}</span>
               </div>
             ))}
-          </div>
-        )}
-
-        {rx && (
-          <div className="border-t-[1.5px] border-dashed border-border pt-3.5 mt-3.5">
-            <p className="font-display text-sm font-bold mb-1 text-ink">Prescription</p>
-            <p className="text-[10px] uppercase tracking-wide mb-2 text-slate">{formatDate(rx.date)}</p>
-            <div className="grid grid-cols-4 gap-1 text-[10px] mb-1.5 font-mono">
-              <span></span><span className="text-slate">SPH</span><span className="text-slate">CYL</span><span className="text-slate">AXIS / ADD</span>
-            </div>
-            <div className="grid grid-cols-4 gap-1 text-sm p-2 rounded-lg mb-1 bg-lensSoft text-ink font-mono">
-              <span className="font-semibold">Right Eye (OD)</span><span>{rx.odSphere || "—"}</span><span>{rx.odCyl || "—"}</span>
-              <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span>
-            </div>
-            <div className="grid grid-cols-4 gap-1 text-sm p-2 rounded-lg mb-2 bg-lensSoft text-ink font-mono">
-              <span className="font-semibold">Left Eye (OS)</span><span>{rx.osSphere || "—"}</span><span>{rx.osCyl || "—"}</span>
-              <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span>
-            </div>
-            {rx.pd && <p className="text-[11px] text-slate"><span className="font-semibold">PD:</span> {rx.pd}mm</p>}
-            {rx.lensType && (
-              <div className="flex items-center gap-1.5 mt-1">
-                <div className="w-[11px] h-[11px] border-[1.5px] border-ink rounded-[3px] flex items-center justify-center flex-shrink-0">
-                  <Check size={8} className="text-ink" strokeWidth={3} />
-                </div>
-                <span className="text-[11px] font-medium text-slate">{rx.lensType}</span>
-              </div>
-            )}
-            {(rx.coatings?.length > 0 || rx.lensIndex || rx.tint) && (
-              <p className="text-[11px] mt-1 text-slate">
-                <span className="font-semibold">Lens:</span>{" "}
-                {[rx.lensIndex && `${rx.lensIndex} index`, rx.tint, rx.coatings?.length ? rx.coatings.join(" + ") : null].filter(Boolean).join(", ")}
-              </p>
-            )}
-            {rx.framePhoto && (
-              <div className="mt-2">
-                <p className="text-[10px] uppercase tracking-wide mb-1 text-slate">Booked frame</p>
-                <img src={rx.framePhoto} alt="Booked frame" className="w-20 h-20 rounded-[10px] object-cover border border-border" />
-              </div>
-            )}
           </div>
         )}
 
