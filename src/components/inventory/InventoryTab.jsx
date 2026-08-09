@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2 } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet } from "lucide-react";
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
 import { ITEM_TYPES, itemTypeLabel } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
+import ImportExcelModal from "./ImportExcelModal";
 
 function voicePrefill(parsed) {
   return {
@@ -32,6 +33,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [error, setError] = useState("");
   const [voiceDraft, setVoiceDraft] = useState(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const filtered = inventory.filter((i) => filter === "all" || i.type === filter);
 
@@ -90,6 +92,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         action={
           isOwner ? (
             <div className="flex items-center gap-2">
+              <RoundIconBtn onClick={() => setShowImport(true)}>
+                <FileSpreadsheet size={15} />
+              </RoundIconBtn>
               {voiceSupported && (
                 <RoundIconBtn onClick={startVoiceCommand} tone={listening ? "warn" : "default"}>
                   {voiceBusy ? <Loader2 size={15} className="animate-spin" /> : <Mic size={15} />}
@@ -181,6 +186,16 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       )}
       {isOwner && voiceDraft && (
         <ItemFormModal title="Add stock item" initial={voiceDraft} onClose={() => setVoiceDraft(null)} onSave={addItem} />
+      )}
+      {isOwner && showImport && (
+        <ImportExcelModal
+          branchId={branchId}
+          onClose={() => setShowImport(false)}
+          onImported={(saved) => {
+            setInventory([...saved, ...inventory]);
+            setShowImport(false);
+          }}
+        />
       )}
     </div>
   );

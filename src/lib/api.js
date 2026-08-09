@@ -195,6 +195,14 @@ export async function createInventoryItem(branchId, item) {
   return inventoryFromDb(data);
 }
 
+// Bulk insert for spreadsheet import -- one round trip instead of one per row.
+export async function createInventoryItems(branchId, items) {
+  const rows = items.map((item) => ({ branch_id: branchId, ...inventoryToDb(item) }));
+  const { data, error } = await supabase.from("inventory").insert(rows).select();
+  if (error) throw error;
+  return data.map(inventoryFromDb);
+}
+
 export async function updateInventoryItem(id, item) {
   const { data, error } = await supabase
     .from("inventory")
