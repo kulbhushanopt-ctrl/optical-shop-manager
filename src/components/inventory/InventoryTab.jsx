@@ -203,9 +203,11 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       {isOwner && showImport && (
         <ImportExcelModal
           branchId={branchId}
+          inventory={inventory}
           onClose={() => setShowImport(false)}
-          onImported={(saved) => {
-            setInventory([...saved, ...inventory]);
+          onImported={({ created, updated }) => {
+            const updatedIds = new Set(updated.map((u) => u.id));
+            setInventory([...created, ...inventory.map((i) => (updatedIds.has(i.id) ? updated.find((u) => u.id === i.id) : i))]);
             setShowImport(false);
           }}
         />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, TrendingUp, Receipt } from "lucide-react";
+import { Plus, TrendingUp, Receipt, Search } from "lucide-react";
 import {
   createInvoice as apiCreateInvoice,
   updateInvoicePayment,
@@ -26,6 +26,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
   const [openInvoiceId, setOpenInvoiceId] = useState(null);
   const [showReport, setShowReport] = useState(false);
   const [orderFilter, setOrderFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [error, setError] = useState("");
 
   const openInvoice = invoices.find((i) => i.id === openInvoiceId) || null;
@@ -103,7 +104,8 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
 
   const sorted = [...invoices]
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .filter((i) => orderFilter === "all" || i.orderStatus === orderFilter);
+    .filter((i) => orderFilter === "all" || i.orderStatus === orderFilter)
+    .filter((i) => (i.patientName || "").toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div>
@@ -126,6 +128,17 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
           <p className="text-xs rounded-lg px-3 py-2 text-warn bg-warnSoft">{error}</p>
         </div>
       )}
+      <div className="px-5 mb-3">
+        <div className="rounded-xl px-3 py-2 flex items-center gap-2 bg-card border border-border">
+          <Search size={15} className="text-slate" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by patient name…"
+            className="flex-1 outline-none text-sm bg-transparent text-ink"
+          />
+        </div>
+      </div>
       <div className="px-5 flex gap-2 mb-3 overflow-x-auto">
         {ORDER_FILTERS.map((f) => (
           <button
@@ -141,7 +154,11 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       </div>
 
       {sorted.length === 0 ? (
-        <EmptyState icon={Receipt} title="No invoices yet" subtitle="Create your first sale to track revenue and update stock automatically." />
+        invoices.length === 0 ? (
+          <EmptyState icon={Receipt} title="No invoices yet" subtitle="Create your first sale to track revenue and update stock automatically." />
+        ) : (
+          <EmptyState icon={Search} title="No matching invoices" subtitle="Try a different name or filter." />
+        )
       ) : (
         <div className="px-5 flex flex-col gap-2">
           {sorted.map((inv) => {

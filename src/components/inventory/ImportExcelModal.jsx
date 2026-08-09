@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Download, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Upload, Download, CheckCircle2, AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Modal, PrimaryBtn } from "../shared/ui";
-import { createInventoryItems } from "../../lib/api";
+import { createInventoryItems, updateInventoryItem } from "../../lib/api";
 import { ITEM_TYPES } from "../../lib/rxConstants";
 import { currency } from "../../lib/format";
 
@@ -55,7 +55,13 @@ function buildFieldMap(headers) {
   return map;
 }
 
-function parseRows(rawRows) {
+function findMatch(item, existingInventory) {
+  if (!item.sku) return null;
+  const sku = item.sku.trim().toLowerCase();
+  return existingInventory.find((inv) => inv.type === item.type && (inv.sku || "").trim().toLowerCase() === sku) || null;
+}
+
+function parseRows(rawRows, existingInventory) {
   if (!rawRows.length) return [];
   const fieldMap = buildFieldMap(Object.keys(rawRows[0]));
   return rawRows.map((row) => {
@@ -80,11 +86,12 @@ function parseRows(rawRows) {
     if (!model) errors.push("model");
     if (price == null) errors.push("price");
     if (stock == null) errors.push("stock");
-    return { item, valid: errors.length === 0, errors };
+    const match = errors.length === 0 ? findMatch(item, existingInventory) : null;
+    return { item, valid: errors.length === 0, errors, match };
   });
 }
 
-export default function ImportExcelModal({ branchId, onClose, onImported }) {
+export default function ImportExcelModal({ branchId, inventory, onClose, onImported }) {
   const [rows, setRows] = useState(null);
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
@@ -106,7 +113,7 @@ export default function ImportExcelModal({ branchId, onClose, onImported }) {
         if (!rawRows.length) {
           setError("That file doesn't have any data rows.");
         } else {
-          setRows(parseRows(rawRows));
+          setRows(parseRows(rawRows, inventory));
           setFileName(file.name);
         }
       } catch (err) {
@@ -130,13 +137,33 @@ export default function ImportExcelModal({ branchId, onClose, onImported }) {
 
   const validRows = (rows || []).filter((r) => r.valid);
   const invalidCount = (rows || []).length - validRows.length;
+  const toCreate = validRows.filter((r) => !r.match);
+  const toUpdate = validRows.filter((r) => r.match);
 
   const handleImport = async () => {
     setImporting(true);
     setError("");
     try {
-      const saved = await createInventoryItems(branchId, validRows.map((r) => r.item));
-      onImported(saved);
+      const created = toCreate.length ? await createInventoryItems(branchId, toCreate.map((r) => r.item)) : [];
+
+      // Matched rows restock an existing item (by SKU + type) instead of
+      // creating a duplicate — adds to its current stock and refreshes the
+      // price, leaving brand/model/SKU/HSN/low-stock threshold untouched.
+      const updated = [];
+      for (const r of toUpdate) {
+        try {
+          const saved = await updateInventoryItem(r.match.id, {
+            ...r.match,
+            stock: r.match.stock + r.item.stock,
+            price: r.item.price,
+          });
+          updated.push(saved);
+        } catch (e) {
+          /* one row failing shouldn't block the rest of the import */
+        }
+      }
+
+      onImported({ created, updated });
     } catch (err) {
       setError("Import failed — please try again.");
       setImporting(false);
@@ -168,14 +195,18 @@ export default function ImportExcelModal({ branchId, onClose, onImported }) {
         <>
           <p className="text-xs text-slate mb-1 truncate">{fileName}</p>
           <p className="text-sm font-medium text-ink mb-3">
-            {validRows.length} item{validRows.length === 1 ? "" : "s"} ready to import
+            {toCreate.length} new · {toUpdate.length} restock{toUpdate.length === 1 ? "" : "s"}
             {invalidCount > 0 && <span className="text-warn"> · {invalidCount} skipped</span>}
           </p>
           <div className="max-h-56 overflow-y-auto rounded-xl border border-border divide-y divide-border mb-3">
             {rows.map((r, i) => (
               <div key={i} className="px-3 py-2 flex items-center gap-2 text-xs">
                 {r.valid ? (
-                  <CheckCircle2 size={13} className="text-lens flex-shrink-0" />
+                  r.match ? (
+                    <RefreshCw size={13} className="text-focus flex-shrink-0" />
+                  ) : (
+                    <CheckCircle2 size={13} className="text-lens flex-shrink-0" />
+                  )
                 ) : (
                   <AlertTriangle size={13} className="text-warn flex-shrink-0" />
                 )}
@@ -184,7 +215,7 @@ export default function ImportExcelModal({ branchId, onClose, onImported }) {
                 </span>
                 {r.valid ? (
                   <span className="text-slate font-mono flex-shrink-0">
-                    {r.item.stock} @ {currency(r.item.price)}
+                    {r.match ? `${r.match.stock} + ${r.item.stock} = ${r.match.stock + r.item.stock}` : r.item.stock} @ {currency(r.item.price)}
                   </span>
                 ) : (
                   <span className="text-warn flex-shrink-0">missing {r.errors.join(", ")}</span>
