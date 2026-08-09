@@ -4,6 +4,8 @@ import { Modal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
 import { formatDate, calculateAge } from "../../lib/format";
 
+const pad = (s, n) => String(s ?? "—").padEnd(n, " ");
+
 export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
   const slipRef = useRef(null);
   const age = calculateAge(patient.dob);
@@ -15,9 +17,9 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
     `\nPatient: ${patient.name}${age != null ? ` (Age ${age})` : ""}\n` +
     `Date: ${formatDate(rx.date)}\n` +
     (rx.chiefComplaint ? `Chief complaint: ${rx.chiefComplaint}\n` : "") +
-    `\n                 SPH      CYL      AXIS/ADD      VA\n` +
-    `Right Eye (OD)   ${rx.odSphere || "—"}      ${rx.odCyl || "—"}      ${rx.odAxis || "—"}${rx.odAdd ? ` / ${rx.odAdd}` : ""}      ${rx.odVA || "—"}\n` +
-    `Left Eye (OS)    ${rx.osSphere || "—"}      ${rx.osCyl || "—"}      ${rx.osAxis || "—"}${rx.osAdd ? ` / ${rx.osAdd}` : ""}      ${rx.osVA || "—"}\n` +
+    `\n${pad("", 15)}${pad("SPH", 9)}${pad("CYL", 9)}${pad("AXIS", 7)}${pad("ADD", 8)}VA\n` +
+    `${pad("Right Eye (OD)", 15)}${pad(rx.odSphere, 9)}${pad(rx.odCyl, 9)}${pad(rx.odAxis, 7)}${pad(rx.odAdd, 8)}${rx.odVA || "—"}\n` +
+    `${pad("Left Eye (OS)", 15)}${pad(rx.osSphere, 9)}${pad(rx.osCyl, 9)}${pad(rx.osAxis, 7)}${pad(rx.osAdd, 8)}${rx.osVA || "—"}\n` +
     (rx.pd ? `PD: ${rx.pd}mm\n` : "") +
     ((rx.lensType || rx.coatings?.length || rx.lensIndex || rx.tint)
       ? `Lens: ${[rx.lensType, rx.lensIndex && `${rx.lensIndex} index`, rx.tint, rx.coatings?.join(" + ")].filter(Boolean).join(", ")}\n`
@@ -66,26 +68,37 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
           <p className="text-[11px] mb-3 text-ink"><span className="font-semibold">Chief complaint:</span> {rx.chiefComplaint}</p>
         )}
 
-        <div className="grid grid-cols-5 gap-1 text-[10px] mb-1.5 font-mono">
-          <span></span>
-          <span className="text-slate">SPH</span>
-          <span className="text-slate">CYL</span>
-          <span className="text-slate">AXIS / ADD</span>
-          <span className="text-slate">VA</span>
-        </div>
-        <div className="grid grid-cols-5 gap-1 text-sm p-2 rounded-lg mb-1 bg-lensSoft text-ink font-mono">
-          <span className="font-semibold">Right Eye (OD)</span>
-          <span>{rx.odSphere || "—"}</span>
-          <span>{rx.odCyl || "—"}</span>
-          <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span>
-          <span>{rx.odVA || "—"}</span>
-        </div>
-        <div className="grid grid-cols-5 gap-1 text-sm p-2 rounded-lg mb-3 bg-lensSoft text-ink font-mono">
-          <span className="font-semibold">Left Eye (OS)</span>
-          <span>{rx.osSphere || "—"}</span>
-          <span>{rx.osCyl || "—"}</span>
-          <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span>
-          <span>{rx.osVA || "—"}</span>
+        <div className="rounded-lg overflow-hidden border border-lens/30 mb-3">
+          <table className="w-full text-sm font-mono border-collapse">
+            <thead>
+              <tr className="bg-lensSoft">
+                <th className="py-1.5 px-2 text-left text-[10px] text-slate font-medium"></th>
+                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">SPH</th>
+                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">CYL</th>
+                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">AXIS</th>
+                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">ADD</th>
+                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">VA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="bg-lensSoft/50 border-t border-lens/20">
+                <td className="py-1.5 px-2 font-semibold text-ink whitespace-nowrap">Right Eye (OD)</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odSphere || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odCyl || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odAxis || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odAdd || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odVA || "—"}</td>
+              </tr>
+              <tr className="bg-lensSoft/50 border-t border-lens/20">
+                <td className="py-1.5 px-2 font-semibold text-ink whitespace-nowrap">Left Eye (OS)</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osSphere || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osCyl || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osAxis || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osAdd || "—"}</td>
+                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osVA || "—"}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {rx.pd && <p className="text-xs mb-1 text-slate"><span className="font-semibold">PD:</span> {rx.pd}mm</p>}

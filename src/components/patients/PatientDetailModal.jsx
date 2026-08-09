@@ -92,16 +92,37 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
               {rx.chiefComplaint && (
                 <p className="text-[11px] mb-2 text-ink"><span className="font-semibold">Complaint:</span> {rx.chiefComplaint}</p>
               )}
-              <div className="grid grid-cols-5 gap-1 text-[10px] mb-1 font-mono">
-                <span></span><span className="text-slate">SPH</span><span className="text-slate">CYL</span><span className="text-slate">AXIS/ADD</span><span className="text-slate">VA</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1 text-xs mb-0.5 text-ink font-mono">
-                <span className="font-semibold">OD</span><span>{rx.odSphere || "—"}</span><span>{rx.odCyl || "—"}</span>
-                <span>{rx.odAxis || "—"}{rx.odAdd ? ` / ${rx.odAdd}` : ""}</span><span>{rx.odVA || "—"}</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1 text-xs text-ink font-mono">
-                <span className="font-semibold">OS</span><span>{rx.osSphere || "—"}</span><span>{rx.osCyl || "—"}</span>
-                <span>{rx.osAxis || "—"}{rx.osAdd ? ` / ${rx.osAdd}` : ""}</span><span>{rx.osVA || "—"}</span>
+              <div className="rounded-lg overflow-hidden border border-lens/25 mb-1">
+                <table className="w-full text-[11px] font-mono border-collapse">
+                  <thead>
+                    <tr className="bg-lens/10">
+                      <th className="py-1 px-1.5 w-9"></th>
+                      <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">SPH</th>
+                      <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">CYL</th>
+                      <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">AXIS</th>
+                      <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">ADD</th>
+                      <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">VA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t border-lens/20">
+                      <td className="py-1 px-1.5 font-semibold text-ink">OD</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odSphere || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odCyl || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odAxis || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odAdd || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.odVA || "—"}</td>
+                    </tr>
+                    <tr className="border-t border-lens/20">
+                      <td className="py-1 px-1.5 font-semibold text-ink">OS</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osSphere || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osCyl || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osAxis || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osAdd || "—"}</td>
+                      <td className="py-1 px-1.5 text-center text-ink border-l border-lens/20">{rx.osVA || "—"}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               {rx.pd && <p className="text-[11px] mt-1.5 text-slate">PD: {rx.pd}mm</p>}
               {(rx.lensType || rx.coatings?.length > 0 || rx.lensIndex || rx.tint) && (
