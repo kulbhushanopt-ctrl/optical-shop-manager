@@ -7,6 +7,14 @@ export function useVoiceInput(onResult) {
   const [supported, setSupported] = useState(false);
   const recognitionRef = useRef(null);
 
+  // The SpeechRecognition instance is created once (mount) and its onresult
+  // callback would otherwise close over that render's `onResult` forever —
+  // stale-capturing whatever form state existed at mount. Routing through a
+  // ref that's refreshed every render keeps each dictation call writing into
+  // the current state instead of resetting sibling fields back to it.
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
+
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -20,13 +28,12 @@ export function useVoiceInput(onResult) {
     recognition.lang = "en-IN";
     recognition.onresult = (event) => {
       const text = event.results[0][0].transcript;
-      onResult(text);
+      onResultRef.current(text);
     };
     recognition.onend = () => setListening(false);
     recognition.onerror = () => setListening(false);
     recognitionRef.current = recognition;
     return () => recognition.stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const start = () => {
