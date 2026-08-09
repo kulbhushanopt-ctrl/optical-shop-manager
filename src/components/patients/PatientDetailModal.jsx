@@ -93,10 +93,18 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
                 <p className="text-[11px] mb-2 text-ink"><span className="font-semibold">Complaint:</span> {rx.chiefComplaint}</p>
               )}
               <div className="rounded-lg overflow-hidden border border-lens/25 mb-1">
-                <table className="w-full text-[11px] font-mono border-collapse">
+                <table className="w-full table-fixed text-[11px] font-mono border-collapse">
+                  <colgroup>
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "16.4%" }} />
+                    <col style={{ width: "16.4%" }} />
+                    <col style={{ width: "16.4%" }} />
+                    <col style={{ width: "16.4%" }} />
+                    <col style={{ width: "16.4%" }} />
+                  </colgroup>
                   <thead>
                     <tr className="bg-lens/10">
-                      <th className="py-1 px-1.5 w-9"></th>
+                      <th className="py-1 px-1.5"></th>
                       <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">SPH</th>
                       <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">CYL</th>
                       <th className="py-1 px-1.5 text-slate font-medium border-l border-lens/20">AXIS</th>

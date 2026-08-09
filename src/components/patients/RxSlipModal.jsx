@@ -69,33 +69,41 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
         )}
 
         <div className="rounded-lg overflow-hidden border border-lens/30 mb-3">
-          <table className="w-full text-sm font-mono border-collapse">
+          <table className="w-full table-fixed text-xs font-mono border-collapse">
+            <colgroup>
+              <col style={{ width: "22%" }} />
+              <col style={{ width: "15.6%" }} />
+              <col style={{ width: "15.6%" }} />
+              <col style={{ width: "15.6%" }} />
+              <col style={{ width: "15.6%" }} />
+              <col style={{ width: "15.6%" }} />
+            </colgroup>
             <thead>
               <tr className="bg-lensSoft">
-                <th className="py-1.5 px-2 text-left text-[10px] text-slate font-medium"></th>
-                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">SPH</th>
-                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">CYL</th>
-                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">AXIS</th>
-                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">ADD</th>
-                <th className="py-1.5 px-2 text-[10px] text-slate font-medium border-l border-lens/20">VA</th>
+                <th className="py-1.5 px-1 text-left text-[9px] text-slate font-medium"></th>
+                <th className="py-1.5 px-1 text-[9px] text-slate font-medium border-l border-lens/20">SPH</th>
+                <th className="py-1.5 px-1 text-[9px] text-slate font-medium border-l border-lens/20">CYL</th>
+                <th className="py-1.5 px-1 text-[9px] text-slate font-medium border-l border-lens/20">AXIS</th>
+                <th className="py-1.5 px-1 text-[9px] text-slate font-medium border-l border-lens/20">ADD</th>
+                <th className="py-1.5 px-1 text-[9px] text-slate font-medium border-l border-lens/20">VA</th>
               </tr>
             </thead>
             <tbody>
               <tr className="bg-lensSoft/50 border-t border-lens/20">
-                <td className="py-1.5 px-2 font-semibold text-ink whitespace-nowrap">Right Eye (OD)</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odSphere || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odCyl || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odAxis || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odAdd || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.odVA || "—"}</td>
+                <td className="py-1.5 px-1 font-semibold text-ink leading-tight">OD</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.odSphere || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.odCyl || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.odAxis || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.odAdd || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.odVA || "—"}</td>
               </tr>
               <tr className="bg-lensSoft/50 border-t border-lens/20">
-                <td className="py-1.5 px-2 font-semibold text-ink whitespace-nowrap">Left Eye (OS)</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osSphere || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osCyl || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osAxis || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osAdd || "—"}</td>
-                <td className="py-1.5 px-2 text-center text-ink border-l border-lens/20">{rx.osVA || "—"}</td>
+                <td className="py-1.5 px-1 font-semibold text-ink leading-tight">OS</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.osSphere || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.osCyl || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.osAxis || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.osAdd || "—"}</td>
+                <td className="py-1.5 px-1 text-center text-ink border-l border-lens/20">{rx.osVA || "—"}</td>
               </tr>
             </tbody>
           </table>
