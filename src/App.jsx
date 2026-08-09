@@ -1,15 +1,30 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Home, Users, Receipt, Package, AlertTriangle } from "lucide-react";
 import { supabase, supabaseConfigError } from "./lib/supabaseClient";
-import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices } from "./lib/api";
+import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, signOut } from "./lib/api";
 import { Spinner, BottomNav } from "./components/shared/ui";
 import AuthScreen from "./components/AuthScreen";
-import BranchOnboarding from "./components/BranchOnboarding";
+import ShopAccessGate from "./components/ShopAccessGate";
 import TopBar from "./components/layout/TopBar";
 import HomeTab from "./components/HomeTab";
 import PatientsTab from "./components/patients/PatientsTab";
 import InventoryTab from "./components/inventory/InventoryTab";
 import BillingTab from "./components/billing/BillingTab";
+
+function AccessRevokedScreen() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center px-6 bg-paper font-sans">
+      <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-5 text-center">
+        <div className="bg-warnSoft rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+          <AlertTriangle size={22} className="text-warn" />
+        </div>
+        <h1 className="font-display text-base font-bold text-ink mb-1">Access disabled</h1>
+        <p className="text-xs text-slate mb-4">This shop's access has been disabled by the app owner. Contact them if you think this is a mistake.</p>
+        <button onClick={() => signOut()} className="text-xs font-medium text-slate">Sign out</button>
+      </div>
+    </div>
+  );
+}
 
 function ConfigErrorScreen({ message }) {
   return (
@@ -86,16 +101,22 @@ export default function OpticalShopApp() {
   if (checking) return <Spinner />;
   if (!session) return <AuthScreen />;
   if (membershipsLoading) return <Spinner label="Loading your shop…" />;
-  if (memberships.length === 0) return <BranchOnboarding onCreated={handleBranchCreated} />;
+  if (memberships.length === 0) return <ShopAccessGate onCreated={handleBranchCreated} />;
 
-  const current = memberships.find((m) => m.branch_id === currentBranchId) || memberships[0];
+  // A branch the admin has disabled (revoked) still shows up as a
+  // membership row, but its `branches` embed is filtered out by RLS --
+  // filter those out here instead of crashing on a null branch below.
+  const usableMemberships = memberships.filter((m) => m.branches);
+  if (usableMemberships.length === 0) return <AccessRevokedScreen />;
+
+  const current = usableMemberships.find((m) => m.branch_id === currentBranchId) || usableMemberships[0];
 
   return (
     <ShopApp
       key={current.branch_id}
       branch={current.branches}
       role={current.role}
-      memberships={memberships}
+      memberships={usableMemberships}
       onSwitchBranch={switchBranch}
       onBranchCreated={handleBranchCreated}
       onBranchUpdated={(updated) =>

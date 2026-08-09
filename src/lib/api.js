@@ -17,6 +17,37 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
+/* ---------- Shop access requests (soft-stop signup) ---------- */
+// A fresh sign-up with no branch and no staff invite lands here instead of
+// being blocked outright: they submit a request, the owner approves or
+// rejects it directly in the Supabase table editor (no in-app admin UI).
+export async function fetchMyShopRequest() {
+  const { data: userData } = await supabase.auth.getUser();
+  const email = userData?.user?.email;
+  if (!email) return null;
+  const { data, error } = await supabase
+    .from("shop_requests")
+    .select("id,status,shop_name,requested_at")
+    .eq("email", email)
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function createShopRequest({ shopName, phone }) {
+  const { data: userData } = await supabase.auth.getUser();
+  const email = userData?.user?.email;
+  const { data, error } = await supabase
+    .from("shop_requests")
+    .insert({ email, shop_name: shopName, phone: phone || null })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- Branches & membership ---------- */
 export async function fetchMyMemberships() {
   const { data, error } = await supabase
