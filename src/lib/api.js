@@ -291,3 +291,16 @@ export async function deleteInvoice(id) {
   const { error } = await supabase.from("invoices").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------- AI voice-command inventory entry ---------- */
+// Parses a spoken "add N frames, price X" style sentence into item fields
+// via the parse-inventory-command Edge Function. Returns
+// { error: "not_configured", message } until a GEMINI_API_KEY secret is set
+// on the Supabase project -- that's a normal, expected response.
+export async function parseInventoryCommand(text) {
+  const { data, error } = await supabase.functions.invoke("parse-inventory-command", {
+    body: { text },
+  });
+  if (error) throw error;
+  return data;
+}

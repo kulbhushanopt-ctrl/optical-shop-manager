@@ -15,14 +15,17 @@ const ITEM_PLACEHOLDERS = {
   accessory: { brand: "Optical Care", model: "Lens Cleaning Spray", sku: "AC-1001" },
 };
 
+const BLANK_ITEM = {
+  type: "frame", brand: "", model: "", sku: "", price: "", stock: "", low: 3,
+  power: "", addPower: "", lensIndex: "", coatings: [],
+  baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
+};
+
 export default function ItemFormModal({ title, initial, onClose, onSave, onDelete }) {
-  const [f, setF] = useState(
-    initial || {
-      type: "frame", brand: "", model: "", sku: "", price: "", stock: "", low: 3,
-      power: "", addPower: "", lensIndex: "", coatings: [],
-      baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
-    }
-  );
+  // `initial` may be a full existing item (editing) or a partial AI-parsed
+  // prefill (voice add) -- merge over blank defaults either way so missing
+  // fields (e.g. `low`, `coatings`) don't end up undefined.
+  const [f, setF] = useState({ ...BLANK_ITEM, ...(initial || {}) });
   const set = (k) => (v) => setF({ ...f, [k]: v });
   const toggleCoating = (c) => {
     const coatings = f.coatings || [];
@@ -122,7 +125,7 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
         disabled={!valid}
         onClick={() => onSave({ ...f, price: Number(f.price), stock: Number(f.stock), low: Number(f.low) || 3 })}
       >
-        {initial ? "Save changes" : "Add item"}
+        {initial?.id ? "Save changes" : "Add item"}
       </PrimaryBtn>
       {onDelete && (
         <button onClick={onDelete} className="text-xs flex items-center gap-1 mt-3 mx-auto text-warn">

@@ -1,10 +1,22 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle } from "lucide-react";
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem } from "../../lib/api";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2 } from "lucide-react";
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
 import { ITEM_TYPES, itemTypeLabel } from "../../lib/rxConstants";
+import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
+
+function voicePrefill(parsed) {
+  return {
+    type: ITEM_TYPES.some((t) => t.id === parsed.type) ? parsed.type : "frame",
+    brand: parsed.brand || "",
+    model: parsed.model || "",
+    sku: parsed.sku || "",
+    price: parsed.price != null ? String(parsed.price) : "",
+    stock: parsed.stock != null ? String(parsed.stock) : "",
+  };
+}
 
 function ItemIcon({ type }) {
   if (["frame", "sunglasses"].includes(type)) return <Glasses size={16} className="text-focus" />;
@@ -18,6 +30,8 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [error, setError] = useState("");
+  const [voiceDraft, setVoiceDraft] = useState(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
 
   const filtered = inventory.filter((i) => filter === "all" || i.type === filter);
 
@@ -26,10 +40,29 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       const saved = await createInventoryItem(branchId, data);
       setInventory([saved, ...inventory]);
       setShowAdd(false);
+      setVoiceDraft(null);
     } catch (e) {
       setError("Couldn't save item — please try again.");
     }
   };
+
+  const { listening, supported: voiceSupported, start: startVoiceCommand } = useVoiceInput(async (text) => {
+    setVoiceBusy(true);
+    setError("");
+    try {
+      const result = await parseInventoryCommand(text);
+      if (result?.error === "not_configured") {
+        setError(result.message || "AI voice entry isn't set up yet.");
+      } else if (result?.error) {
+        setError("Didn't catch that — please try again or add the item manually.");
+      } else {
+        setVoiceDraft(voicePrefill(result));
+      }
+    } catch (e) {
+      setError("Didn't catch that — please try again or add the item manually.");
+    }
+    setVoiceBusy(false);
+  });
   const saveEdit = async (updated) => {
     try {
       const saved = await updateInventoryItem(updated.id, updated);
@@ -56,12 +89,26 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         subtitle={`${inventory.length} items · ${inventory.filter((i) => i.stock <= i.low).length} low`}
         action={
           isOwner ? (
-            <RoundIconBtn onClick={() => setShowAdd(true)} tone="focus">
-              <Plus size={17} className="text-ink" />
-            </RoundIconBtn>
+            <div className="flex items-center gap-2">
+              {voiceSupported && (
+                <RoundIconBtn onClick={startVoiceCommand} tone={listening ? "warn" : "default"}>
+                  {voiceBusy ? <Loader2 size={15} className="animate-spin" /> : <Mic size={15} />}
+                </RoundIconBtn>
+              )}
+              <RoundIconBtn onClick={() => setShowAdd(true)} tone="focus">
+                <Plus size={17} className="text-ink" />
+              </RoundIconBtn>
+            </div>
           ) : undefined
         }
       />
+      {isOwner && (listening || voiceBusy) && (
+        <div className="px-5 mb-3">
+          <p className="text-xs rounded-lg px-3 py-2 text-lens bg-lensSoft">
+            {listening ? "Listening — say what to add, e.g. \"add ten black frames, price two thousand\"…" : "Reading that…"}
+          </p>
+        </div>
+      )}
       {error && (
         <div className="px-5 mb-3">
           <p className="text-xs rounded-lg px-3 py-2 text-warn bg-warnSoft">{error}</p>
@@ -131,6 +178,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       {isOwner && showAdd && <ItemFormModal title="Add stock item" onClose={() => setShowAdd(false)} onSave={addItem} />}
       {isOwner && editItem && (
         <ItemFormModal title="Edit item" initial={editItem} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
+      )}
+      {isOwner && voiceDraft && (
+        <ItemFormModal title="Add stock item" initial={voiceDraft} onClose={() => setVoiceDraft(null)} onSave={addItem} />
       )}
     </div>
   );
