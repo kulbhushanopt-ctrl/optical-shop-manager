@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
-import { Users, Package, Receipt, AlertTriangle } from "lucide-react";
+import { Users, Package, Receipt, AlertTriangle, Clock } from "lucide-react";
 import { StatCard, SectionHeader, EmptyState } from "./shared/ui";
-import { currency, formatDate } from "../lib/format";
+import { currency, formatDate, orderStatusLabel } from "../lib/format";
 
 export default function HomeTab({ patients, inventory, invoices, setTab }) {
   const stats = useMemo(() => {
@@ -14,7 +14,8 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
       .reduce((sum, i) => sum + (Number(i.amountPaid) || 0), 0);
     const pendingDue = invoices.reduce((sum, i) => sum + (Number(i.total) - Number(i.amountPaid || 0)), 0);
     const lowStock = inventory.filter((item) => (item.stock ?? 0) <= (item.low ?? 3));
-    return { monthRevenue, pendingDue, lowStock };
+    const awaitingPickup = invoices.filter((i) => i.orderStatus === "processing" || i.orderStatus === "ready");
+    return { monthRevenue, pendingDue, lowStock, awaitingPickup };
   }, [invoices, inventory]);
 
   const recentInvoices = invoices.slice(0, 5);
@@ -34,6 +35,26 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
           onClick={() => setTab("billing")}
         />
       </div>
+
+      {stats.awaitingPickup.length > 0 && (
+        <div className="px-5 mt-5">
+          <p className="text-xs font-semibold text-slate mb-2 flex items-center gap-1">
+            <Clock size={12} /> Awaiting pickup
+          </p>
+          <div className="space-y-2">
+            {stats.awaitingPickup.slice(0, 4).map((inv) => (
+              <button
+                key={inv.id}
+                onClick={() => setTab("billing")}
+                className="w-full flex items-center justify-between bg-lensSoft rounded-xl px-3 py-2.5 text-left"
+              >
+                <span className="text-sm text-ink">{inv.patientName || "Walk-in"}</span>
+                <span className="text-xs font-semibold text-lens">{orderStatusLabel(inv.orderStatus)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {stats.lowStock.length > 0 && (
         <div className="px-5 mt-5">

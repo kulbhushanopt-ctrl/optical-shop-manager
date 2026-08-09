@@ -2,9 +2,9 @@ import React, { useMemo, useRef, useState } from "react";
 import { Glasses, Check, Trash2 } from "lucide-react";
 import { Modal, Field, TextInput, PrimaryBtn, ConfirmModal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
-import { currency, formatDate, statusTone } from "../../lib/format";
+import { currency, formatDate, statusTone, ORDER_STATUSES, orderStatusLabel, orderStatusTone } from "../../lib/format";
 
-export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, onDelete, shopInfo, patients }) {
+export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, onChangeOrderStatus, onDelete, shopInfo, patients }) {
   const invoiceRef = useRef(null);
   const [payInput, setPayInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -64,6 +64,31 @@ export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, 
         shareTitle={`Invoice — ${invoice.patientName}`}
         shareText={receiptText}
       />
+
+      {onChangeOrderStatus && (
+        <div className="no-print mb-4">
+          <Field label="Order status">
+            <div className="flex gap-2">
+              {ORDER_STATUSES.map((s) => {
+                const active = invoice.orderStatus === s;
+                const activeTone = orderStatusTone(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => onChangeOrderStatus(s)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold border ${
+                      active ? `${activeTone.bg} ${activeTone.text} border-transparent` : "bg-card text-slate border-border"
+                    }`}
+                  >
+                    {orderStatusLabel(s)}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
+      )}
 
       <div id="print-area" ref={invoiceRef} className="bg-card border-[1.5px] border-border rounded-2xl p-5">
         <div className="border-b-2 border-ink pb-3 mb-3.5 flex items-center gap-3">

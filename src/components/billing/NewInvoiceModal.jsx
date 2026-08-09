@@ -20,6 +20,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   const [isGstBill, setIsGstBill] = useState(true);
   const [amountPaidInput, setAmountPaidInput] = useState("");
   const [prescriptionId, setPrescriptionId] = useState("");
+  const [collectLater, setCollectLater] = useState(false);
 
   const addNewPatient = async () => {
     if (!newPatientName.trim()) return;
@@ -88,6 +89,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
       amountPaid,
       status: invoiceStatus(amountPaid, total),
       prescription: selectedPrescription,
+      orderStatus: collectLater ? "processing" : "delivered",
     });
   };
 
@@ -196,6 +198,25 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
             className={`flex-1 py-2 rounded-xl text-xs font-semibold border ${!isGstBill ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"}`}
           >
             Without GST
+          </button>
+        </div>
+      </Field>
+
+      <Field label="Handover">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setCollectLater(false)}
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold border ${!collectLater ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"}`}
+          >
+            Given now
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollectLater(true)}
+            className={`flex-1 py-2 rounded-xl text-xs font-semibold border ${collectLater ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"}`}
+          >
+            Collect later
           </button>
         </div>
       </Field>

@@ -3,20 +3,29 @@ import { Plus, TrendingUp, Receipt } from "lucide-react";
 import {
   createInvoice as apiCreateInvoice,
   updateInvoicePayment,
+  updateInvoiceOrderStatus,
   decrementInventoryStock,
   updateInventoryItem,
   deleteInvoice as apiDeleteInvoice,
 } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
-import { currency, formatDate, invoiceStatus, statusTone } from "../../lib/format";
+import { currency, formatDate, invoiceStatus, statusTone, orderStatusLabel, orderStatusTone } from "../../lib/format";
 import NewInvoiceModal from "./NewInvoiceModal";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import SalesReportModal from "./SalesReportModal";
+
+const ORDER_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "processing", label: "Processing" },
+  { id: "ready", label: "Ready for pickup" },
+  { id: "delivered", label: "Delivered" },
+];
 
 export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, branchId, isOwner, shopInfo }) {
   const [showNew, setShowNew] = useState(false);
   const [openInvoiceId, setOpenInvoiceId] = useState(null);
   const [showReport, setShowReport] = useState(false);
+  const [orderFilter, setOrderFilter] = useState("all");
   const [error, setError] = useState("");
 
   const openInvoice = invoices.find((i) => i.id === openInvoiceId) || null;
@@ -83,7 +92,18 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
     }
   };
 
-  const sorted = [...invoices].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const advanceOrderStatus = async (inv, newStatus) => {
+    try {
+      const updated = await updateInvoiceOrderStatus(inv.id, newStatus);
+      setInvoices(invoices.map((i) => (i.id === updated.id ? updated : i)));
+    } catch (e) {
+      setError("Couldn't update order status — please try again.");
+    }
+  };
+
+  const sorted = [...invoices]
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .filter((i) => orderFilter === "all" || i.orderStatus === orderFilter);
 
   return (
     <div>
@@ -106,12 +126,27 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
           <p className="text-xs rounded-lg px-3 py-2 text-warn bg-warnSoft">{error}</p>
         </div>
       )}
+      <div className="px-5 flex gap-2 mb-3 overflow-x-auto">
+        {ORDER_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setOrderFilter(f.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 border ${
+              orderFilter === f.id ? "bg-ink text-white border-ink" : "bg-card text-slate border-border"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {sorted.length === 0 ? (
         <EmptyState icon={Receipt} title="No invoices yet" subtitle="Create your first sale to track revenue and update stock automatically." />
       ) : (
         <div className="px-5 flex flex-col gap-2">
           {sorted.map((inv) => {
             const tone = statusTone(inv.status);
+            const oTone = orderStatusTone(inv.orderStatus);
             return (
               <button
                 key={inv.id}
@@ -127,7 +162,12 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-ink font-mono">{currency(inv.total)}</p>
-                  <div className="flex gap-1 justify-end mt-0.5">
+                  <div className="flex gap-1 justify-end mt-0.5 flex-wrap">
+                    {inv.orderStatus !== "delivered" && (
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${oTone.text} ${oTone.bg}`}>
+                        {orderStatusLabel(inv.orderStatus)}
+                      </span>
+                    )}
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${tone.text} ${tone.bg}`}>{inv.status}</span>
                   </div>
                 </div>
@@ -145,6 +185,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
           invoice={openInvoice}
           onClose={() => setOpenInvoiceId(null)}
           onRecordPayment={(amt) => recordPayment(openInvoice, amt)}
+          onChangeOrderStatus={(status) => advanceOrderStatus(openInvoice, status)}
           onDelete={isOwner ? () => removeInvoice(openInvoice) : undefined}
           shopInfo={shopInfo}
           patients={patients}

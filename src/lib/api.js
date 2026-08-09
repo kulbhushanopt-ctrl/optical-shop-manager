@@ -274,6 +274,7 @@ function invoiceToDb(inv) {
     status: inv.status,
     amount_paid: inv.amountPaid ?? 0,
     prescription: inv.prescription || null,
+    order_status: inv.orderStatus || "delivered",
   };
 }
 
@@ -292,6 +293,7 @@ export function invoiceFromDb(row) {
     status: row.status,
     amountPaid: row.amount_paid ?? 0,
     prescription: row.prescription || null,
+    orderStatus: row.order_status || "delivered",
   };
 }
 
@@ -319,6 +321,17 @@ export async function updateInvoicePayment(id, patch) {
   const { data, error } = await supabase
     .from("invoices")
     .update({ amount_paid: patch.amountPaid, status: patch.status })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return invoiceFromDb(data);
+}
+
+export async function updateInvoiceOrderStatus(id, orderStatus) {
+  const { data, error } = await supabase
+    .from("invoices")
+    .update({ order_status: orderStatus })
     .eq("id", id)
     .select()
     .single();

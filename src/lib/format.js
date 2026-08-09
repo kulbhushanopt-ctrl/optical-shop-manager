@@ -30,3 +30,17 @@ export function statusTone(status) {
   if (status === "partial") return { text: "text-focus", bg: "bg-focusSoft" };
   return { text: "text-warn", bg: "bg-warnSoft" };
 }
+
+export const ORDER_STATUSES = ["processing", "ready", "delivered"];
+
+export function orderStatusLabel(status) {
+  if (status === "processing") return "Processing";
+  if (status === "ready") return "Ready for pickup";
+  return "Delivered";
+}
+
+export function orderStatusTone(status) {
+  if (status === "ready") return { text: "text-lens", bg: "bg-lensSoft" };
+  if (status === "processing") return { text: "text-focus", bg: "bg-focusSoft" };
+  return { text: "text-slate", bg: "bg-border" };
+}
