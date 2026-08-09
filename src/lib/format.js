@@ -42,5 +42,5 @@ export function orderStatusLabel(status) {
 export function orderStatusTone(status) {
   if (status === "ready") return { text: "text-lens", bg: "bg-lensSoft" };
   if (status === "processing") return { text: "text-focus", bg: "bg-focusSoft" };
-  return { text: "text-slate", bg: "bg-border" };
+  return { text: "text-white", bg: "bg-ink" };
 }
