@@ -198,12 +198,12 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         </div>
       )}
 
-      {isOwner && showAdd && <ItemFormModal title="Add stock item" onClose={() => setShowAdd(false)} onSave={addItem} />}
+      {isOwner && showAdd && <ItemFormModal title="Add stock item" inventory={inventory} onClose={() => setShowAdd(false)} onSave={addItem} />}
       {isOwner && editItem && (
-        <ItemFormModal title="Edit item" initial={editItem} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
+        <ItemFormModal title="Edit item" initial={editItem} inventory={inventory} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
       )}
       {isOwner && voiceDraft && (
-        <ItemFormModal title="Add stock item" initial={voiceDraft} onClose={() => setVoiceDraft(null)} onSave={addItem} />
+        <ItemFormModal title="Add stock item" initial={voiceDraft} inventory={inventory} onClose={() => setVoiceDraft(null)} onSave={addItem} />
       )}
       {isOwner && showImport && (
         <ImportExcelModal

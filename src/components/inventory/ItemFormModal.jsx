@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState } from "react";
 import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
-import { ITEM_TYPES, LENS_INDEXES, COATINGS } from "../../lib/rxConstants";
+import { ITEM_TYPES, LENS_INDEXES, COATINGS, suggestNextSku } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
 
 // The barcode decoder library is large and only needed once someone
@@ -26,7 +26,7 @@ const BLANK_ITEM = {
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
 
-export default function ItemFormModal({ title, initial, onClose, onSave, onDelete }) {
+export default function ItemFormModal({ title, initial, inventory, onClose, onSave, onDelete }) {
   // `initial` may be a full existing item (editing) or a partial AI-parsed
   // prefill (voice add) -- merge over blank defaults either way so missing
   // fields (e.g. `low`, `coatings`) don't end up undefined.
@@ -66,6 +66,11 @@ export default function ItemFormModal({ title, initial, onClose, onSave, onDelet
               <Barcode size={15} />
             </button>
           </div>
+          {!initial?.id && !f.sku && inventory && (
+            <button type="button" onClick={() => set("sku")(suggestNextSku(f.type, inventory))} className="text-[10px] text-lens mt-1">
+              Use next: {suggestNextSku(f.type, inventory)}
+            </button>
+          )}
         </Field>
         <Field label="HSN code"><VoiceInput value={f.hsnCode || ""} onChange={set("hsnCode")} placeholder="9004" /></Field>
       </div>

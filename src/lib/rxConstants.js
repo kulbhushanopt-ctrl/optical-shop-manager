@@ -14,3 +14,22 @@ export const ITEM_TYPES = [
 export const itemTypeLabel = (id) => ITEM_TYPES.find((t) => t.id === id)?.label || id;
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
+
+const SKU_PREFIXES = { frame: "FR", sunglasses: "SG", lens: "LN", contact: "CL", accessory: "AC" };
+
+// Finds the highest existing "<prefix>-<number>" SKU for this item type and
+// suggests the next one, so nobody has to remember or scroll through stock
+// to find where numbering left off. Keeps at least 3-digit padding (FR-001)
+// but grows naturally past 999 without truncating.
+export function suggestNextSku(type, inventory) {
+  const prefix = SKU_PREFIXES[type] || "SKU";
+  const pattern = new RegExp(`^${prefix}-?(\\d+)$`, "i");
+  let max = 0;
+  for (const item of inventory || []) {
+    const m = (item.sku || "").trim().match(pattern);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  }
+  const next = max + 1;
+  const width = Math.max(3, String(next).length);
+  return `${prefix}-${String(next).padStart(width, "0")}`;
+}
