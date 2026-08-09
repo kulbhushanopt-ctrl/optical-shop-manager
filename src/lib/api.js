@@ -246,15 +246,6 @@ export async function updateInventoryItem(id, item) {
   return inventoryFromDb(data);
 }
 
-// Staff can sell inventory (via invoices) but can't edit it directly — RLS
-// restricts inventory writes to branch owners. This calls a SECURITY DEFINER
-// RPC that only decrements stock, so a sale doesn't require owner access.
-export async function decrementInventoryStock(id, qty) {
-  const { data, error } = await supabase.rpc("decrement_inventory_stock", { p_item_id: id, p_qty: qty });
-  if (error) throw error;
-  return inventoryFromDb(data);
-}
-
 export async function deleteInventoryItem(id) {
   const { error } = await supabase.from("inventory").delete().eq("id", id);
   if (error) throw error;
@@ -308,23 +299,35 @@ export async function fetchInvoices(branchId) {
   return data.map(invoiceFromDb);
 }
 
-export async function createInvoice(branchId, invoice) {
-  const { data, error } = await supabase
-    .from("invoices")
-    .insert({ branch_id: branchId, ...invoiceToDb(invoice) })
-    .select()
-    .single();
+// Creates the invoice, decrements stock for every line item, and logs the
+// opening payment (if any) all inside one Postgres transaction via the
+// create_sale RPC — so a sale can never be recorded with stock left
+// un-decremented, even if a step partway through would otherwise fail.
+export async function createSale(branchId, invoice, paymentMethod) {
+  const { data, error } = await supabase.rpc("create_sale", {
+    p_branch_id: branchId,
+    p_invoice: invoiceToDb(invoice),
+    p_payment_method: paymentMethod || "cash",
+  });
   if (error) throw error;
   return invoiceFromDb(data);
 }
 
-export async function updateInvoicePayment(id, patch) {
-  const { data, error } = await supabase
-    .from("invoices")
-    .update({ amount_paid: patch.amountPaid, status: patch.status })
-    .eq("id", id)
-    .select()
-    .single();
+// Deletes the invoice and restores stock for every line item atomically via
+// the delete_sale RPC (owner-only, enforced inside the function).
+export async function deleteSale(invoiceId) {
+  const { error } = await supabase.rpc("delete_sale", { p_invoice_id: invoiceId });
+  if (error) throw error;
+}
+
+// Applies an additional payment to an existing invoice and logs the payment
+// entry atomically via the record_payment RPC.
+export async function recordPaymentRpc(invoiceId, amount, method) {
+  const { data, error } = await supabase.rpc("record_payment", {
+    p_invoice_id: invoiceId,
+    p_amount: amount,
+    p_method: method || "cash",
+  });
   if (error) throw error;
   return invoiceFromDb(data);
 }
@@ -359,21 +362,6 @@ export async function fetchInvoicePayments(branchId) {
     .order("paid_at", { ascending: false });
   if (error) throw error;
   return data.map(paymentFromDb);
-}
-
-export async function recordInvoicePaymentEntry(branchId, invoiceId, amount, method) {
-  const { data, error } = await supabase
-    .from("invoice_payments")
-    .insert({ branch_id: branchId, invoice_id: invoiceId, amount, method })
-    .select()
-    .single();
-  if (error) throw error;
-  return paymentFromDb(data);
-}
-
-export async function deleteInvoice(id) {
-  const { error } = await supabase.from("invoices").delete().eq("id", id);
-  if (error) throw error;
 }
 
 /* ---------- AI voice-command inventory entry ---------- */

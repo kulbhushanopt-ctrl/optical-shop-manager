@@ -1,16 +1,8 @@
 import React, { useState } from "react";
 import { Plus, TrendingUp, Receipt, Search } from "lucide-react";
-import {
-  createInvoice as apiCreateInvoice,
-  updateInvoicePayment,
-  updateInvoiceOrderStatus,
-  decrementInventoryStock,
-  updateInventoryItem,
-  deleteInvoice as apiDeleteInvoice,
-  recordInvoicePaymentEntry,
-} from "../../lib/api";
+import { createSale, deleteSale, recordPaymentRpc, updateInvoiceOrderStatus } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
-import { currency, formatDate, invoiceStatus, statusTone, orderStatusLabel, orderStatusTone } from "../../lib/format";
+import { currency, formatDate, statusTone, orderStatusLabel, orderStatusTone } from "../../lib/format";
 import NewInvoiceModal from "./NewInvoiceModal";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import SalesReportModal from "./SalesReportModal";
@@ -34,32 +26,28 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
 
   const createInvoice = async (invoice) => {
     try {
-      const saved = await apiCreateInvoice(branchId, invoice);
+      // Invoice creation, stock decrement, and the opening payment entry all
+      // happen inside one Postgres transaction via create_sale — either the
+      // whole sale is recorded or none of it is.
+      const method = invoice.paymentMethod || "cash";
+      const saved = await createSale(branchId, invoice, method);
       setInvoices([saved, ...invoices]);
 
       if (saved.amountPaid > 0) {
-        try {
-          const entry = await recordInvoicePaymentEntry(branchId, saved.id, saved.amountPaid, invoice.paymentMethod || "cash");
-          setPayments([entry, ...payments]);
-        } catch (e) {
-          /* payment logged in the invoice total regardless; mode log is best-effort */
-        }
+        setPayments([{ id: `local-${saved.id}`, invoiceId: saved.id, amount: saved.amountPaid, method, paidAt: new Date().toISOString() }, ...payments]);
       }
 
-      // Sell items decrement stock via a narrow RPC — inventory writes are
-      // owner-only under RLS, but staff still need to be able to sell items.
+      // Mirror the RPC's stock decrement locally so the list reflects it
+      // immediately without a second round trip.
       const stockUpdates = invoice.items.filter((l) => l.itemId);
-      const updatedInventory = [...inventory];
-      for (const line of stockUpdates) {
-        const idx = updatedInventory.findIndex((i) => i.id === line.itemId);
-        if (idx === -1) continue;
-        try {
-          updatedInventory[idx] = await decrementInventoryStock(line.itemId, line.qty);
-        } catch (e) {
-          /* stock update failed — invoice still recorded */
-        }
+      if (stockUpdates.length) {
+        setInventory(
+          inventory.map((item) => {
+            const line = stockUpdates.find((l) => l.itemId === item.id);
+            return line ? { ...item, stock: Math.max(0, item.stock - line.qty) } : item;
+          })
+        );
       }
-      setInventory(updatedInventory);
       setShowNew(false);
     } catch (e) {
       setError("Couldn't save invoice — please try again.");
@@ -68,21 +56,17 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
 
   const removeInvoice = async (invoice) => {
     try {
-      // Undo the stock decrement applied when this invoice was created,
-      // for any line items that came from inventory.
-      const updatedInventory = [...inventory];
-      for (const line of invoice.items.filter((l) => l.itemId)) {
-        const idx = updatedInventory.findIndex((i) => i.id === line.itemId);
-        if (idx === -1) continue;
-        try {
-          const item = updatedInventory[idx];
-          updatedInventory[idx] = await updateInventoryItem(item.id, { ...item, stock: item.stock + line.qty });
-        } catch (e) {
-          /* stock restore failed — invoice deletion still proceeds */
-        }
+      // Deletion and the stock restore both happen inside delete_sale.
+      await deleteSale(invoice.id);
+      const stockUpdates = invoice.items.filter((l) => l.itemId);
+      if (stockUpdates.length) {
+        setInventory(
+          inventory.map((item) => {
+            const line = stockUpdates.find((l) => l.itemId === item.id);
+            return line ? { ...item, stock: item.stock + line.qty } : item;
+          })
+        );
       }
-      setInventory(updatedInventory);
-      await apiDeleteInvoice(invoice.id);
       setInvoices(invoices.filter((i) => i.id !== invoice.id));
       setPayments(payments.filter((p) => p.invoiceId !== invoice.id));
       setOpenInvoiceId(null);
@@ -93,18 +77,11 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
 
   const recordPayment = async (inv, additionalAmount, method) => {
     try {
-      const newAmountPaid = Math.max(0, Math.min(inv.total, (inv.amountPaid || 0) + additionalAmount));
-      const updated = await updateInvoicePayment(inv.id, {
-        amountPaid: newAmountPaid,
-        status: invoiceStatus(newAmountPaid, inv.total),
-      });
+      // The invoice's amount_paid/status and the payment log entry are
+      // updated together inside record_payment.
+      const updated = await recordPaymentRpc(inv.id, additionalAmount, method || "cash");
       setInvoices(invoices.map((i) => (i.id === updated.id ? updated : i)));
-      try {
-        const entry = await recordInvoicePaymentEntry(branchId, inv.id, additionalAmount, method || "cash");
-        setPayments([entry, ...payments]);
-      } catch (e) {
-        /* payment total already saved; mode log is best-effort */
-      }
+      setPayments([{ id: `local-${inv.id}-${Date.now()}`, invoiceId: inv.id, amount: additionalAmount, method: method || "cash", paidAt: new Date().toISOString() }, ...payments]);
     } catch (e) {
       setError("Couldn't update invoice — please try again.");
     }
