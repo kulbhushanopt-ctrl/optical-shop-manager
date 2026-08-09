@@ -1,12 +1,13 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Glasses, Check } from "lucide-react";
-import { Modal, Field, TextInput, PrimaryBtn } from "../shared/ui";
+import { Glasses, Check, Trash2 } from "lucide-react";
+import { Modal, Field, TextInput, PrimaryBtn, ConfirmModal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
 import { currency, formatDate, statusTone } from "../../lib/format";
 
-export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, shopInfo, patients }) {
+export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, onDelete, shopInfo, patients }) {
   const invoiceRef = useRef(null);
   const [payInput, setPayInput] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const patient = patients?.find((p) => p.id === invoice.patientId);
   const balanceLeft = Math.max(0, invoice.total - (invoice.amountPaid || 0));
   const grossTotal = invoice.items.reduce((s, l) => s + l.price * l.qty, 0);
@@ -244,6 +245,21 @@ export default function InvoiceDetailModal({ invoice, onClose, onRecordPayment, 
             </span>
           </PrimaryBtn>
         </div>
+      )}
+
+      {onDelete && (
+        <button onClick={() => setConfirmDelete(true)} className="no-print text-xs flex items-center gap-1 mt-4 mx-auto text-warn">
+          <Trash2 size={12} /> Delete invoice
+        </button>
+      )}
+      {confirmDelete && (
+        <ConfirmModal
+          title="Delete this invoice?"
+          body="This removes the invoice permanently and restores any inventory stock it sold. This can't be undone."
+          confirmLabel="Delete"
+          onConfirm={onDelete}
+          onClose={() => setConfirmDelete(false)}
+        />
       )}
     </Modal>
   );

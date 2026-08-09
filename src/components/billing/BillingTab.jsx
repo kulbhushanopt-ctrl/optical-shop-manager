@@ -1,13 +1,19 @@
 import React, { useState } from "react";
 import { Plus, TrendingUp, Receipt } from "lucide-react";
-import { createInvoice as apiCreateInvoice, updateInvoicePayment, decrementInventoryStock } from "../../lib/api";
+import {
+  createInvoice as apiCreateInvoice,
+  updateInvoicePayment,
+  decrementInventoryStock,
+  updateInventoryItem,
+  deleteInvoice as apiDeleteInvoice,
+} from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
 import { currency, formatDate, invoiceStatus, statusTone } from "../../lib/format";
 import NewInvoiceModal from "./NewInvoiceModal";
 import InvoiceDetailModal from "./InvoiceDetailModal";
 import SalesReportModal from "./SalesReportModal";
 
-export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, branchId, shopInfo }) {
+export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, branchId, isOwner, shopInfo }) {
   const [showNew, setShowNew] = useState(false);
   const [openInvoiceId, setOpenInvoiceId] = useState(null);
   const [showReport, setShowReport] = useState(false);
@@ -37,6 +43,30 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       setShowNew(false);
     } catch (e) {
       setError("Couldn't save invoice — please try again.");
+    }
+  };
+
+  const removeInvoice = async (invoice) => {
+    try {
+      // Undo the stock decrement applied when this invoice was created,
+      // for any line items that came from inventory.
+      const updatedInventory = [...inventory];
+      for (const line of invoice.items.filter((l) => l.itemId)) {
+        const idx = updatedInventory.findIndex((i) => i.id === line.itemId);
+        if (idx === -1) continue;
+        try {
+          const item = updatedInventory[idx];
+          updatedInventory[idx] = await updateInventoryItem(item.id, { ...item, stock: item.stock + line.qty });
+        } catch (e) {
+          /* stock restore failed — invoice deletion still proceeds */
+        }
+      }
+      setInventory(updatedInventory);
+      await apiDeleteInvoice(invoice.id);
+      setInvoices(invoices.filter((i) => i.id !== invoice.id));
+      setOpenInvoiceId(null);
+    } catch (e) {
+      setError("Couldn't delete invoice — please try again.");
     }
   };
 
@@ -115,6 +145,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
           invoice={openInvoice}
           onClose={() => setOpenInvoiceId(null)}
           onRecordPayment={(amt) => recordPayment(openInvoice, amt)}
+          onDelete={isOwner ? () => removeInvoice(openInvoice) : undefined}
           shopInfo={shopInfo}
           patients={patients}
         />

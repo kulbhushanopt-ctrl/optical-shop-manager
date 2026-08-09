@@ -186,6 +186,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
               invoices={invoices}
               setInvoices={setInvoices}
               branchId={branch.id}
+              isOwner={isOwner}
               shopInfo={branch}
             />
           )}
