@@ -60,11 +60,11 @@ Deno.serve(async (req: Request) => {
 <p>Open Supabase &rarr; Table Editor &rarr; <code>shop_requests</code> to approve or reject.</p>`,
       }),
     });
+    const resText = await res.text();
     if (!res.ok) {
-      const errText = await res.text();
-      return json({ error: "upstream_error", message: errText }, 502);
+      return json({ error: "upstream_error", message: resText }, 502);
     }
-    return json({ ok: true });
+    return json({ ok: true, resend: resText });
   } catch (e) {
     return json({ error: "upstream_error", message: String(e) }, 502);
   }
