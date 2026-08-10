@@ -3,7 +3,7 @@ import { Camera, Loader2, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, withCurrentValue } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
-import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
+import { Modal, Field, VoiceInput, VoiceRxInput, VoiceSelect, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 
 const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "odVA", "osSphere", "osCyl", "osAxis", "osAdd", "osVA", "pd"];
@@ -98,60 +98,60 @@ export default function AddRxModal({ onClose, onSave, initial }) {
 
       <div className="grid grid-cols-3 gap-2">
         <Field label="OD Sphere">
-          <Select value={f.odSphere} onChange={(e) => set("odSphere")(e.target.value)}>
+          <VoiceSelect value={f.odSphere} onChange={set("odSphere")} parse={parseRxPower}>
             <option value="">— Select —</option>
             {withCurrentValue(SPHERE_POWERS, f.odSphere).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OD Cyl">
-          <Select value={f.odCyl} onChange={(e) => set("odCyl")(e.target.value)}>
+          <VoiceSelect value={f.odCyl} onChange={set("odCyl")} parse={parseRxPower}>
             <option value="">— Select —</option>
             {withCurrentValue(CYL_POWERS, f.odCyl).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Field label="OS Sphere">
-          <Select value={f.osSphere} onChange={(e) => set("osSphere")(e.target.value)}>
+          <VoiceSelect value={f.osSphere} onChange={set("osSphere")} parse={parseRxPower}>
             <option value="">— Select —</option>
             {withCurrentValue(SPHERE_POWERS, f.osSphere).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OS Cyl">
-          <Select value={f.osCyl} onChange={(e) => set("osCyl")(e.target.value)}>
+          <VoiceSelect value={f.osCyl} onChange={set("osCyl")} parse={parseRxPower}>
             <option value="">— Select —</option>
             {withCurrentValue(CYL_POWERS, f.osCyl).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="OD Vision (after correction)">
-          <Select value={f.odVA} onChange={(e) => set("odVA")(e.target.value)}>
+          <VoiceSelect value={f.odVA} onChange={set("odVA")}>
             <option value="">— Select —</option>
             {withCurrentValue(VA_OPTIONS, f.odVA).map((v) => <option key={v} value={v}>{v}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OS Vision (after correction)">
-          <Select value={f.osVA} onChange={(e) => set("osVA")(e.target.value)}>
+          <VoiceSelect value={f.osVA} onChange={set("osVA")}>
             <option value="">— Select —</option>
             {withCurrentValue(VA_OPTIONS, f.osVA).map((v) => <option key={v} value={v}>{v}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="OD Add">
-          <Select value={f.odAdd} onChange={(e) => set("odAdd")(e.target.value)}>
+          <VoiceSelect value={f.odAdd} onChange={set("odAdd")} parse={parseRxAdd}>
             <option value="">— Select —</option>
             {withCurrentValue(ADD_POWERS, f.odAdd).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
         <Field label="OS Add">
-          <Select value={f.osAdd} onChange={(e) => set("osAdd")(e.target.value)}>
+          <VoiceSelect value={f.osAdd} onChange={set("osAdd")} parse={parseRxAdd}>
             <option value="">— Select —</option>
             {withCurrentValue(ADD_POWERS, f.osAdd).map((p) => <option key={p} value={p}>{p}</option>)}
-          </Select>
+          </VoiceSelect>
         </Field>
       </div>
       <Field label="Pupillary distance (mm)"><VoiceRxInput value={f.pd} onChange={set("pd")} placeholder="62" parse={parseRxPlainNumber} /></Field>

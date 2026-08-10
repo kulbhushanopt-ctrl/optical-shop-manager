@@ -95,6 +95,19 @@ export function VoiceRxInput({ value, onChange, placeholder, parse }) {
   );
 }
 
+// A dropdown that can also be filled by voice -- dictated speech runs
+// through `parse` (if given) and sets the select's value, same as
+// VoiceRxInput does for a text field. `children` are the <option>s.
+export function VoiceSelect({ value, onChange, parse, children }) {
+  const { listening, supported, start } = useVoiceInput((text) => onChange(parse ? parse(text) : text));
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={value} onChange={(e) => onChange(e.target.value)}>{children}</Select>
+      <MicButton listening={listening} supported={supported} onClick={start} />
+    </div>
+  );
+}
+
 export function VoiceTextArea({ value, onChange, placeholder, rows = 3 }) {
   const { listening, supported, start } = useVoiceInput((text) => onChange(value ? `${value} ${text}` : text));
   return (
