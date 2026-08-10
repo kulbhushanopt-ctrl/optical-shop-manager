@@ -4,6 +4,7 @@ import { Plus, Search, Download, Users, ChevronRight } from "lucide-react";
 import { createPatient, updatePatient as apiUpdatePatient, deletePatient as apiDeletePatient } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
 import { formatDate, todayISO } from "../../lib/format";
+import { uid } from "../../lib/rxConstants";
 import AddPatientModal from "./AddPatientModal";
 import PatientDetailModal from "./PatientDetailModal";
 
@@ -49,7 +50,12 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
 
   const addPatient = async (data) => {
     try {
-      const p = await createPatient(branchId, data);
+      // An intake-form AI scan may have carried both patient fields and a
+      // first prescription (scannedRx) -- fold it into the new patient's
+      // prescriptions array here, same shape AddRxModal's addRx builds.
+      const { scannedRx, ...patientFields } = data;
+      const prescriptions = scannedRx ? [{ id: uid(), date: todayISO(), ...scannedRx }] : [];
+      const p = await createPatient(branchId, { ...patientFields, prescriptions });
       setPatients([p, ...patients]);
       setShowAdd(false);
     } catch (e) {

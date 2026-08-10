@@ -104,3 +104,23 @@ export function parseRxAdd(text) {
   const decPart = (m[3] || "").padEnd(2, "0").slice(0, 2);
   return `+${intPart}.${decPart}`;
 }
+
+// The prescription fields an AI photo scan can fill in -- shared between the
+// dedicated Rx scanner and the combined patient-intake scanner so both stay
+// in sync with what the scan-prescription/scan-patient-intake edge
+// functions return.
+export const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "odVA", "osSphere", "osCyl", "osAxis", "osAdd", "osVA", "pd"];
+
+const SPHERE_CYL_FIELDS = ["odSphere", "osSphere", "odCyl", "osCyl"];
+const ADD_FIELDS = ["odAdd", "osAdd"];
+
+// Reformats a power value (however it was typed, dictated, or AI-scanned)
+// into the signed two-decimal form the sphere/cyl/add dropdowns use, so an
+// existing prescription's values line up with an option instead of showing
+// blank just because the stored string wasn't already in that exact shape.
+export function normalizeRxValue(key, value) {
+  if (!value) return value;
+  if (SPHERE_CYL_FIELDS.includes(key)) return parseRxPower(value);
+  if (ADD_FIELDS.includes(key)) return parseRxAdd(value);
+  return value;
+}

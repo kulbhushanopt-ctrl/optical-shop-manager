@@ -2,24 +2,9 @@ import React, { useState } from "react";
 import { Camera, Loader2, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, PD_OPTIONS, withCurrentValue, withBlankCentered } from "../../lib/rxConstants";
-import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
+import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber, RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceSelect, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
-
-const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "odVA", "osSphere", "osCyl", "osAxis", "osAdd", "osVA", "pd"];
-const SPHERE_CYL_FIELDS = ["odSphere", "osSphere", "odCyl", "osCyl"];
-const ADD_FIELDS = ["odAdd", "osAdd"];
-
-// Reformats a power value (however it was typed, dictated, or AI-scanned)
-// into the signed two-decimal form the sphere/cyl/add dropdowns use, so an
-// existing prescription's values line up with an option instead of showing
-// blank just because the stored string wasn't already in that exact shape.
-function normalizeRxValue(key, value) {
-  if (!value) return value;
-  if (SPHERE_CYL_FIELDS.includes(key)) return parseRxPower(value);
-  if (ADD_FIELDS.includes(key)) return parseRxAdd(value);
-  return value;
-}
 
 export default function AddRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState(() => {
@@ -32,7 +17,7 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       framePhoto: null,
       ...(initial || {}),
     };
-    [...SPHERE_CYL_FIELDS, ...ADD_FIELDS].forEach((k) => {
+    RX_SCAN_FIELDS.forEach((k) => {
       base[k] = normalizeRxValue(k, base[k]);
     });
     return base;
