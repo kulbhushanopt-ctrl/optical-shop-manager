@@ -37,8 +37,12 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
 
       <div id="print-area" ref={slipRef} className="bg-card border-[1.5px] border-border rounded-2xl p-5">
         <div className="border-b-2 border-ink pb-3 mb-3.5 flex items-center gap-3">
-          <div className="bg-focus rounded-full w-[34px] h-[34px] flex items-center justify-center flex-shrink-0">
-            <Glasses size={16} className="text-ink" strokeWidth={2.4} />
+          <div className="bg-focus rounded-full w-[34px] h-[34px] flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {shopInfo?.logo ? (
+              <img src={shopInfo.logo} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <Glasses size={16} className="text-ink" strokeWidth={2.4} />
+            )}
           </div>
           <div>
             <p className="font-display text-sm font-bold text-ink leading-tight">{shopInfo?.name || "Optical Shop"}</p>

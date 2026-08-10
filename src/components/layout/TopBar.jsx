@@ -10,8 +10,12 @@ export default function TopBar({ shopInfo, onBranchUpdated, isOwner, branchId, m
 
   return (
     <div className="bg-ink px-5 pt-6 pb-5 flex items-center gap-3 sticky top-0 z-20">
-      <div className="bg-focus rounded-full w-[38px] h-[38px] flex items-center justify-center flex-shrink-0">
-        <Glasses size={19} className="text-ink" strokeWidth={2.4} />
+      <div className="bg-focus rounded-full w-[38px] h-[38px] flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {shopInfo.logo ? (
+          <img src={shopInfo.logo} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <Glasses size={19} className="text-ink" strokeWidth={2.4} />
+        )}
       </div>
       <button onClick={() => setShowDetails(true)} className="text-left flex-1 min-w-0">
         <div className="font-display text-white text-lg font-semibold leading-tight truncate">{shopInfo.name}</div>
