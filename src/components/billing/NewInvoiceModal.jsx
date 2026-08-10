@@ -46,7 +46,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   const addLine = (item) => {
     const existing = lines.find((l) => l.itemId === item.id);
     if (existing) {
-      setLines(lines.map((l) => (l.itemId === item.id ? { ...l, qty: l.qty + 1 } : l)));
+      setLines(lines.map((l) => (l.itemId === item.id ? { ...l, qty: Math.min(l.maxStock, l.qty + 1) } : l)));
     } else {
       setLines([...lines, { itemId: item.id, name: `${item.brand} ${item.model}`, price: item.price, qty: 1, maxStock: item.stock, hsnCode: item.hsnCode || "", discount: 0 }]);
     }

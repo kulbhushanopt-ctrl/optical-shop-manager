@@ -13,6 +13,16 @@ const corsHeaders = {
 
 const OWNER_EMAIL = "kulbhushanopt@gmail.com";
 
+// This function has verify_jwt disabled (it's called by a Postgres trigger,
+// which can't carry a user session), which would otherwise let anyone who
+// finds the URL trigger an arbitrary email through our Resend account. The
+// trigger sends this shared secret as a header; requests without it are
+// rejected. It's a plain constant rather than a managed secret because
+// there's no tool available in this session to set Edge Function secrets --
+// it's never exposed to any client, only to our own database trigger and
+// this function's own server-side code.
+const TRIGGER_SECRET = "12d27c049a5604d27d6b9004a0fbaf68a752e45871d9a0b5b38e1c5856103cd9";
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -26,6 +36,9 @@ function escapeHtml(s: string) {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.headers.get("x-trigger-secret") !== TRIGGER_SECRET) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   let body: { email?: string; shop_name?: string; phone?: string };
   try {

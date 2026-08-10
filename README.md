@@ -36,5 +36,13 @@ npm run dev
 
 This app expects the following tables to already exist in your Supabase project, each with
 Row Level Security enabled: `branches`, `branch_members`, `branch_invites`, `patients`,
-`inventory`, `invoices`. Access is scoped per-branch — members can read shared data, and only
-branch owners can manage inventory, staff, and delete records.
+`inventory`, `invoices`, `invoice_payments`, `shop_requests`. Access is scoped per-branch —
+members can read shared data, and only branch owners can manage inventory, staff, and delete
+records. Sales and payments go through the `create_sale`/`delete_sale`/`record_payment`
+SECURITY DEFINER RPCs rather than direct table writes, so a sale is always atomic.
+
+The full schema (tables, RLS policies, RPCs, and triggers) lives in
+`supabase/migrations/00000000000000_baseline.sql`, captured directly from the live project.
+Going forward, every schema change should be applied to the live project *and* added as a new
+file in `supabase/migrations/`, so the repo stays a true reflection of the database instead of
+schema history existing only in Supabase.

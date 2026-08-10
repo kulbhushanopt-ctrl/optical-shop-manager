@@ -12,6 +12,13 @@ const corsHeaders = {
 
 const APP_URL = "https://optical-shop-manager.vercel.app/";
 
+// See notify-shop-request for why this exists: verify_jwt is disabled here
+// (called by a Postgres trigger, no user session available), so without
+// this check anyone who found the URL could make this function email an
+// arbitrary address through our Resend account. Never exposed to any
+// client -- only our own database trigger and this function know it.
+const TRIGGER_SECRET = "12d27c049a5604d27d6b9004a0fbaf68a752e45871d9a0b5b38e1c5856103cd9";
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -25,6 +32,9 @@ function escapeHtml(s: string) {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.headers.get("x-trigger-secret") !== TRIGGER_SECRET) {
+    return json({ error: "unauthorized" }, 401);
+  }
 
   let body: { email?: string; shop_name?: string };
   try {
