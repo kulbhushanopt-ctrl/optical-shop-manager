@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Camera, Loader2, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
-import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, withCurrentValue, withBlankCentered } from "../../lib/rxConstants";
+import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, PD_OPTIONS, withCurrentValue, withBlankCentered } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceSelect, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
@@ -42,11 +42,11 @@ export default function AddRxModal({ onClose, onSave, initial }) {
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
   const set = (k) => (v) => setF({ ...f, [k]: v });
-  // Sphere/cyl options with the blank placeholder positioned right next to
-  // 0.00 instead of at the top, so opening an empty field centers the
-  // native picker on 0.00 -- see withBlankCentered.
-  const powerOptions = (list, value) =>
-    withBlankCentered(withCurrentValue(list, value)).map((p) =>
+  // Options with the blank placeholder positioned right next to a sensible
+  // middle value instead of at the top, so opening an empty field centers
+  // the native picker there -- see withBlankCentered.
+  const centeredOptions = (list, value, center) =>
+    withBlankCentered(withCurrentValue(list, value), center).map((p) =>
       p === "" ? (
         <option key="blank" value="">— Select —</option>
       ) : (
@@ -110,12 +110,12 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       <div className="grid grid-cols-3 gap-2">
         <Field label="OD Sphere">
           <VoiceSelect value={f.odSphere} onChange={set("odSphere")} parse={parseRxPower}>
-            {powerOptions(SPHERE_POWERS, f.odSphere)}
+            {centeredOptions(SPHERE_POWERS, f.odSphere)}
           </VoiceSelect>
         </Field>
         <Field label="OD Cyl">
           <VoiceSelect value={f.odCyl} onChange={set("odCyl")} parse={parseRxPower}>
-            {powerOptions(CYL_POWERS, f.odCyl)}
+            {centeredOptions(CYL_POWERS, f.odCyl)}
           </VoiceSelect>
         </Field>
         <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
@@ -123,12 +123,12 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       <div className="grid grid-cols-3 gap-2">
         <Field label="OS Sphere">
           <VoiceSelect value={f.osSphere} onChange={set("osSphere")} parse={parseRxPower}>
-            {powerOptions(SPHERE_POWERS, f.osSphere)}
+            {centeredOptions(SPHERE_POWERS, f.osSphere)}
           </VoiceSelect>
         </Field>
         <Field label="OS Cyl">
           <VoiceSelect value={f.osCyl} onChange={set("osCyl")} parse={parseRxPower}>
-            {powerOptions(CYL_POWERS, f.osCyl)}
+            {centeredOptions(CYL_POWERS, f.osCyl)}
           </VoiceSelect>
         </Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
@@ -161,7 +161,11 @@ export default function AddRxModal({ onClose, onSave, initial }) {
           </VoiceSelect>
         </Field>
       </div>
-      <Field label="Pupillary distance (mm)"><VoiceRxInput value={f.pd} onChange={set("pd")} placeholder="62" parse={parseRxPlainNumber} /></Field>
+      <Field label="Pupillary distance (mm)">
+        <VoiceSelect value={f.pd} onChange={set("pd")} parse={parseRxPlainNumber}>
+          {centeredOptions(PD_OPTIONS, f.pd, "65")}
+        </VoiceSelect>
+      </Field>
 
       <div className="border-t border-dashed border-border pt-3.5 mt-1 mb-3.5">
         <h4 className="font-display text-sm font-semibold text-ink mb-3">Lens preferences</h4>

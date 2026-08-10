@@ -22,16 +22,28 @@ export const SPHERE_POWERS = powerRangeAscending(-20, 20);
 export const CYL_POWERS = powerRangeAscending(-10, 10);
 export const ADD_POWERS = powerRangeAscending(0.75, 4);
 
+function integerRange(min, max) {
+  const out = [];
+  for (let v = min; v <= max; v++) out.push(String(v));
+  return out;
+}
+
+// Typical adult pupillary distance range (mm), low to high, for the PD
+// dropdown -- 65mm is the common average, used as the centered starting
+// point below.
+export const PD_OPTIONS = integerRange(55, 75);
+
 // A mobile <select>'s native picker opens scrolled to whatever option is
-// currently selected. For a symmetric range like sphere/cyl, putting the
-// blank "not chosen yet" placeholder immediately next to 0.00 (instead of
-// at the very start of the list) means opening an empty field lands the
-// picker right in the middle -- 0.00 in view, negative values one swipe up,
-// positive one swipe down -- rather than at the -20.00 end.
-export function withBlankCentered(options) {
-  const zeroIndex = options.indexOf(formatPower(0));
-  if (zeroIndex === -1) return ["", ...options];
-  return [...options.slice(0, zeroIndex), "", ...options.slice(zeroIndex)];
+// currently selected. Putting the blank "not chosen yet" placeholder right
+// next to a sensible middle value (0.00 for sphere/cyl, 65mm for PD)
+// instead of at the very start of the list means opening an empty field
+// lands the picker right in the middle -- that value in view, lower
+// options one swipe up, higher ones one swipe down -- rather than at
+// whichever end the list happens to start.
+export function withBlankCentered(options, centerValue = formatPower(0)) {
+  const idx = options.indexOf(centerValue);
+  if (idx === -1) return ["", ...options];
+  return [...options.slice(0, idx), "", ...options.slice(idx)];
 }
 
 // Standard Snellen visual-acuity notation, best to worst, plus the below-chart
