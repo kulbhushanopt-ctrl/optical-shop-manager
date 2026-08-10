@@ -1,6 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Camera, Loader2, Sparkles } from "lucide-react";
-import { compressImage } from "../../lib/image";
 import { scanPrescription } from "../../lib/api";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
@@ -19,8 +18,7 @@ export default function AddRxModal({ onClose, onSave, initial }) {
     framePhoto: null,
     ...(initial || {}),
   });
-  const [framePhotoLoading, setFramePhotoLoading] = useState(false);
-  const frameFileInputRef = useRef(null);
+  const [showFrameCamera, setShowFrameCamera] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
@@ -56,20 +54,6 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       setScanNotice("Couldn't read that photo — please enter the values manually.");
     }
     setScanning(false);
-  };
-
-  const handleFramePhotoPick = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFramePhotoLoading(true);
-    try {
-      const compressed = await compressImage(file, 640, 0.75);
-      setF((prev) => ({ ...prev, framePhoto: compressed }));
-    } catch (err) {
-      alert("Couldn't process that photo — please try another.");
-    }
-    setFramePhotoLoading(false);
-    e.target.value = "";
   };
 
   return (
@@ -172,12 +156,11 @@ export default function AddRxModal({ onClose, onSave, initial }) {
 
       <div className="border-t border-dashed border-border pt-3.5 mt-1 mb-3.5">
         <h4 className="font-display text-sm font-semibold text-ink mb-3">Booked frame</h4>
-        <input ref={frameFileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFramePhotoPick} />
         {f.framePhoto ? (
           <div className="flex items-center gap-3">
             <img src={f.framePhoto} alt="Booked frame" className="w-16 h-16 rounded-xl object-cover border-[1.5px] border-border" />
             <div className="flex gap-2">
-              <button type="button" onClick={() => frameFileInputRef.current?.click()} className="text-xs font-medium px-3 py-1.5 rounded-full bg-lensSoft text-lens">
+              <button type="button" onClick={() => setShowFrameCamera(true)} className="text-xs font-medium px-3 py-1.5 rounded-full bg-lensSoft text-lens">
                 Retake
               </button>
               <button type="button" onClick={() => setF({ ...f, framePhoto: null })} className="text-xs font-medium px-3 py-1.5 rounded-full bg-warnSoft text-warn">
@@ -188,19 +171,21 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         ) : (
           <button
             type="button"
-            onClick={() => frameFileInputRef.current?.click()}
-            disabled={framePhotoLoading}
+            onClick={() => setShowFrameCamera(true)}
             className="w-full py-4 rounded-xl border-[1.5px] border-dashed border-border flex flex-col items-center justify-center gap-1.5"
           >
-            {framePhotoLoading ? (
-              <Loader2 size={18} className="text-slate animate-spin" />
-            ) : (
-              <>
-                <Camera size={18} className="text-slate" />
-                <span className="text-xs text-slate">Click a photo of the frame booked</span>
-              </>
-            )}
+            <Camera size={18} className="text-slate" />
+            <span className="text-xs text-slate">Click a photo of the frame booked</span>
           </button>
+        )}
+        {showFrameCamera && (
+          <CameraCapture
+            onCapture={(dataUrl) => {
+              setF((prev) => ({ ...prev, framePhoto: dataUrl }));
+              setShowFrameCamera(false);
+            }}
+            onClose={() => setShowFrameCamera(false)}
+          />
         )}
       </div>
 
