@@ -46,7 +46,7 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
               <button
                 key={inv.id}
                 onClick={() => setTab("billing")}
-                className="w-full flex items-center justify-between bg-lensSoft rounded-xl px-3 py-2.5 text-left"
+                className="w-full flex items-center justify-between bg-lensSoft rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
               >
                 <span className="text-sm text-ink">{inv.patientName || "Walk-in"}</span>
                 <span className="text-xs font-semibold text-lens">{orderStatusLabel(inv.orderStatus)}</span>
@@ -64,7 +64,7 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
               <button
                 key={item.id}
                 onClick={() => setTab("inventory")}
-                className="w-full flex items-center justify-between bg-warnSoft rounded-xl px-3 py-2.5 text-left"
+                className="w-full flex items-center justify-between bg-warnSoft rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
               >
                 <span className="text-sm text-ink">{item.brand ? `${item.brand} ${item.model || ""}` : item.type}</span>
                 <span className="text-xs font-semibold text-warn">{item.stock} left</span>
@@ -84,7 +84,7 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
               <button
                 key={inv.id}
                 onClick={() => setTab("billing")}
-                className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-3 py-2.5 text-left"
+                className="w-full flex items-center justify-between bg-card border border-border/70 shadow-sm shadow-ink/[0.03] rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
               >
                 <div className="min-w-0">
                   <div className="text-sm text-ink truncate">{inv.patientName || "Walk-in"}</div>

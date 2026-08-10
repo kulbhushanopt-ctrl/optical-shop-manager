@@ -165,8 +165,8 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
               <div
                 key={item.id}
                 onClick={isOwner ? () => setEditItem(item) : undefined}
-                className={`rounded-2xl p-3.5 flex items-center gap-3 text-left bg-card border border-border ${
-                  isOwner ? "active:scale-[0.99] transition-transform cursor-pointer" : ""
+                className={`rounded-2xl p-3.5 flex items-center gap-3 text-left bg-card border border-border/70 shadow-sm shadow-ink/[0.03] ${
+                  isOwner ? "active:scale-[0.98] transition duration-150 cursor-pointer" : ""
                 }`}
               >
                 <div

@@ -142,7 +142,7 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
             <button
               key={p.id}
               onClick={() => setOpenPatientId(p.id)}
-              className="rounded-2xl p-3.5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform bg-card border border-border"
+              className="rounded-2xl p-3.5 flex items-center gap-3 text-left active:scale-[0.98] transition duration-150 bg-card border border-border/70 shadow-sm shadow-ink/[0.03]"
             >
               <Avatar name={p.name} photo={p.photo} />
               <div className="flex-1 min-w-0">
