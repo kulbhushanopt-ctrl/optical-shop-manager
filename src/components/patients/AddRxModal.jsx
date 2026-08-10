@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Camera, Loader2, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
-import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS } from "../../lib/rxConstants";
+import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, withCurrentValue } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
@@ -100,13 +100,13 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         <Field label="OD Sphere">
           <Select value={f.odSphere} onChange={(e) => set("odSphere")(e.target.value)}>
             <option value="">— Select —</option>
-            {SPHERE_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(SPHERE_POWERS, f.odSphere).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
         <Field label="OD Cyl">
           <Select value={f.odCyl} onChange={(e) => set("odCyl")(e.target.value)}>
             <option value="">— Select —</option>
-            {CYL_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(CYL_POWERS, f.odCyl).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
         <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
@@ -115,32 +115,42 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         <Field label="OS Sphere">
           <Select value={f.osSphere} onChange={(e) => set("osSphere")(e.target.value)}>
             <option value="">— Select —</option>
-            {SPHERE_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(SPHERE_POWERS, f.osSphere).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
         <Field label="OS Cyl">
           <Select value={f.osCyl} onChange={(e) => set("osCyl")(e.target.value)}>
             <option value="">— Select —</option>
-            {CYL_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(CYL_POWERS, f.osCyl).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="OD Vision (after correction)"><VoiceInput value={f.odVA} onChange={set("odVA")} placeholder="6/6" /></Field>
-        <Field label="OS Vision (after correction)"><VoiceInput value={f.osVA} onChange={set("osVA")} placeholder="6/6" /></Field>
+        <Field label="OD Vision (after correction)">
+          <Select value={f.odVA} onChange={(e) => set("odVA")(e.target.value)}>
+            <option value="">— Select —</option>
+            {withCurrentValue(VA_OPTIONS, f.odVA).map((v) => <option key={v} value={v}>{v}</option>)}
+          </Select>
+        </Field>
+        <Field label="OS Vision (after correction)">
+          <Select value={f.osVA} onChange={(e) => set("osVA")(e.target.value)}>
+            <option value="">— Select —</option>
+            {withCurrentValue(VA_OPTIONS, f.osVA).map((v) => <option key={v} value={v}>{v}</option>)}
+          </Select>
+        </Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Field label="OD Add">
           <Select value={f.odAdd} onChange={(e) => set("odAdd")(e.target.value)}>
             <option value="">— Select —</option>
-            {ADD_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(ADD_POWERS, f.odAdd).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
         <Field label="OS Add">
           <Select value={f.osAdd} onChange={(e) => set("osAdd")(e.target.value)}>
             <option value="">— Select —</option>
-            {ADD_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {withCurrentValue(ADD_POWERS, f.osAdd).map((p) => <option key={p} value={p}>{p}</option>)}
           </Select>
         </Field>
       </div>

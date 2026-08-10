@@ -21,6 +21,19 @@ export const SPHERE_POWERS = powerRange(-20, 20);
 export const CYL_POWERS = powerRange(-10, 10);
 export const ADD_POWERS = powerRange(0.75, 4);
 
+// Standard Snellen visual-acuity notation, best to worst, plus the below-chart
+// readings used once acuity drops too low to read letters.
+export const VA_OPTIONS = ["6/4", "6/5", "6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "CF", "HM", "PL", "NPL"];
+
+// Keeps a select's currently-stored value selectable even if it falls
+// outside the standard list -- e.g. very high power, or a free-typed/
+// AI-scanned value from before this dropdown existed. Rather than silently
+// showing blank, the odd value is added as its own option.
+export function withCurrentValue(options, value) {
+  if (!value || options.includes(value)) return options;
+  return [value, ...options];
+}
+
 export const ITEM_TYPES = [
   { id: "frame", label: "Frames" },
   { id: "sunglasses", label: "Sunglasses" },
