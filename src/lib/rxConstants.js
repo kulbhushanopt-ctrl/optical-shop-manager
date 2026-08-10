@@ -6,20 +6,34 @@ export const TINTS = ["Clear", "Photochromatic"];
 // Signed, two-decimal power string in the same format parseRxPower/parseRxAdd
 // produce (e.g. "-2.00", "+0.75", "+0.00") -- keeps dropdown option values in
 // sync with whatever a voice/AI-scanned power gets normalized to.
-function powerRange(min, max, step = 0.25) {
-  const out = [];
-  for (let v = min; v <= max + 1e-9; v += step) {
-    const n = Math.round(v * 100) / 100;
-    out.push(n < 0 ? n.toFixed(2) : `+${n.toFixed(2)}`);
+function formatPower(n) {
+  return n < 0 ? n.toFixed(2) : `+${n.toFixed(2)}`;
+}
+
+// Ordered by magnitude (0.00, then ±0.25, ±0.50, ...) instead of most-
+// negative first -- most prescriptions sit close to 0.00, so this keeps
+// common values a short scroll away instead of behind the whole negative
+// range.
+function powerRangeByMagnitude(maxAbs, step = 0.25) {
+  const out = [formatPower(0)];
+  for (let m = step; m <= maxAbs + 1e-9; m += step) {
+    const n = Math.round(m * 100) / 100;
+    out.push(formatPower(-n), formatPower(n));
   }
+  return out;
+}
+
+function powerRangeAscending(min, max, step = 0.25) {
+  const out = [];
+  for (let v = min; v <= max + 1e-9; v += step) out.push(formatPower(Math.round(v * 100) / 100));
   return out;
 }
 
 // Standard 0.25 D steps for the sphere/cylinder/add power dropdowns in the
 // prescription form.
-export const SPHERE_POWERS = powerRange(-20, 20);
-export const CYL_POWERS = powerRange(-10, 10);
-export const ADD_POWERS = powerRange(0.75, 4);
+export const SPHERE_POWERS = powerRangeByMagnitude(20);
+export const CYL_POWERS = powerRangeByMagnitude(10);
+export const ADD_POWERS = powerRangeAscending(0.75, 4);
 
 // Standard Snellen visual-acuity notation, best to worst, plus the below-chart
 // readings used once acuity drops too low to read letters.
