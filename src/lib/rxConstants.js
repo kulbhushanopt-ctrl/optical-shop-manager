@@ -3,6 +3,24 @@ export const COATINGS = ["Blue Cut", "Hard Coat"];
 export const LENS_INDEXES = ["1.50", "1.56", "1.60", "1.67", "1.74"];
 export const TINTS = ["Clear", "Photochromatic"];
 
+// Signed, two-decimal power string in the same format parseRxPower/parseRxAdd
+// produce (e.g. "-2.00", "+0.75", "+0.00") -- keeps dropdown option values in
+// sync with whatever a voice/AI-scanned power gets normalized to.
+function powerRange(min, max, step = 0.25) {
+  const out = [];
+  for (let v = min; v <= max + 1e-9; v += step) {
+    const n = Math.round(v * 100) / 100;
+    out.push(n < 0 ? n.toFixed(2) : `+${n.toFixed(2)}`);
+  }
+  return out;
+}
+
+// Standard 0.25 D steps for the sphere/cylinder/add power dropdowns in the
+// prescription form.
+export const SPHERE_POWERS = powerRange(-20, 20);
+export const CYL_POWERS = powerRange(-10, 10);
+export const ADD_POWERS = powerRange(0.75, 4);
+
 export const ITEM_TYPES = [
   { id: "frame", label: "Frames" },
   { id: "sunglasses", label: "Sunglasses" },

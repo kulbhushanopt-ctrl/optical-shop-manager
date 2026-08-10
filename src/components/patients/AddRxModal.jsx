@@ -1,22 +1,41 @@
 import React, { useState } from "react";
 import { Camera, Loader2, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
-import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS } from "../../lib/rxConstants";
+import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber } from "../../lib/rxParse";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 
 const RX_SCAN_FIELDS = ["odSphere", "odCyl", "odAxis", "odAdd", "odVA", "osSphere", "osCyl", "osAxis", "osAdd", "osVA", "pd"];
+const SPHERE_CYL_FIELDS = ["odSphere", "osSphere", "odCyl", "osCyl"];
+const ADD_FIELDS = ["odAdd", "osAdd"];
+
+// Reformats a power value (however it was typed, dictated, or AI-scanned)
+// into the signed two-decimal form the sphere/cyl/add dropdowns use, so an
+// existing prescription's values line up with an option instead of showing
+// blank just because the stored string wasn't already in that exact shape.
+function normalizeRxValue(key, value) {
+  if (!value) return value;
+  if (SPHERE_CYL_FIELDS.includes(key)) return parseRxPower(value);
+  if (ADD_FIELDS.includes(key)) return parseRxAdd(value);
+  return value;
+}
 
 export default function AddRxModal({ onClose, onSave, initial }) {
-  const [f, setF] = useState({
-    chiefComplaint: "",
-    odSphere: "", odCyl: "", odAxis: "", odAdd: "", odVA: "",
-    osSphere: "", osCyl: "", osAxis: "", osAdd: "", osVA: "",
-    pd: "", notes: "",
-    lensType: "", coatings: [], lensIndex: "", tint: "",
-    framePhoto: null,
-    ...(initial || {}),
+  const [f, setF] = useState(() => {
+    const base = {
+      chiefComplaint: "",
+      odSphere: "", odCyl: "", odAxis: "", odAdd: "", odVA: "",
+      osSphere: "", osCyl: "", osAxis: "", osAdd: "", osVA: "",
+      pd: "", notes: "",
+      lensType: "", coatings: [], lensIndex: "", tint: "",
+      framePhoto: null,
+      ...(initial || {}),
+    };
+    [...SPHERE_CYL_FIELDS, ...ADD_FIELDS].forEach((k) => {
+      base[k] = normalizeRxValue(k, base[k]);
+    });
+    return base;
   });
   const [showFrameCamera, setShowFrameCamera] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -42,7 +61,7 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         setF((prev) => {
           const next = { ...prev };
           RX_SCAN_FIELDS.forEach((k) => {
-            if (!next[k] && result?.[k]) next[k] = result[k];
+            if (!next[k] && result?.[k]) next[k] = normalizeRxValue(k, result[k]);
           });
           return next;
         });
@@ -78,13 +97,33 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <Field label="OD Sphere"><VoiceRxInput value={f.odSphere} onChange={set("odSphere")} placeholder="-2.00" parse={parseRxPower} /></Field>
-        <Field label="OD Cyl"><VoiceRxInput value={f.odCyl} onChange={set("odCyl")} placeholder="-0.50" parse={parseRxPower} /></Field>
+        <Field label="OD Sphere">
+          <Select value={f.odSphere} onChange={(e) => set("odSphere")(e.target.value)}>
+            <option value="">— Select —</option>
+            {SPHERE_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
+        <Field label="OD Cyl">
+          <Select value={f.odCyl} onChange={(e) => set("odCyl")(e.target.value)}>
+            <option value="">— Select —</option>
+            {CYL_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
         <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="OS Sphere"><VoiceRxInput value={f.osSphere} onChange={set("osSphere")} placeholder="-1.75" parse={parseRxPower} /></Field>
-        <Field label="OS Cyl"><VoiceRxInput value={f.osCyl} onChange={set("osCyl")} placeholder="-0.25" parse={parseRxPower} /></Field>
+        <Field label="OS Sphere">
+          <Select value={f.osSphere} onChange={(e) => set("osSphere")(e.target.value)}>
+            <option value="">— Select —</option>
+            {SPHERE_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
+        <Field label="OS Cyl">
+          <Select value={f.osCyl} onChange={(e) => set("osCyl")(e.target.value)}>
+            <option value="">— Select —</option>
+            {CYL_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -92,8 +131,18 @@ export default function AddRxModal({ onClose, onSave, initial }) {
         <Field label="OS Vision (after correction)"><VoiceInput value={f.osVA} onChange={set("osVA")} placeholder="6/6" /></Field>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="OD Add"><VoiceRxInput value={f.odAdd} onChange={set("odAdd")} placeholder="+2.00" parse={parseRxAdd} /></Field>
-        <Field label="OS Add"><VoiceRxInput value={f.osAdd} onChange={set("osAdd")} placeholder="+2.00" parse={parseRxAdd} /></Field>
+        <Field label="OD Add">
+          <Select value={f.odAdd} onChange={(e) => set("odAdd")(e.target.value)}>
+            <option value="">— Select —</option>
+            {ADD_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
+        <Field label="OS Add">
+          <Select value={f.osAdd} onChange={(e) => set("osAdd")(e.target.value)}>
+            <option value="">— Select —</option>
+            {ADD_POWERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
+        </Field>
       </div>
       <Field label="Pupillary distance (mm)"><VoiceRxInput value={f.pd} onChange={set("pd")} placeholder="62" parse={parseRxPlainNumber} /></Field>
 
