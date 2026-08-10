@@ -37,11 +37,11 @@ export default function ItemFormModal({ title, initial, inventory, onClose, onSa
     const coatings = f.coatings || [];
     setF({ ...f, coatings: coatings.includes(c) ? coatings.filter((x) => x !== c) : [...coatings, c] });
   };
-  const valid = f.brand.trim() && f.model.trim() && f.price !== "" && f.stock !== "";
+  const valid = f.brand.trim() && f.price !== "" && f.stock !== "";
 
   return (
     <Modal title={title} onClose={onClose}>
-      <p className="text-[11px] text-slate -mt-1 mb-3">Only Brand, Model, Price, and Stock are required — everything else is optional and can be filled in later.</p>
+      <p className="text-[11px] text-slate -mt-1 mb-3">Only Brand, Price, and Stock are required — everything else is optional and can be filled in later.</p>
       <Field label="Type">
         <Select value={f.type} onChange={(e) => set("type")(e.target.value)}>
           {ITEM_TYPES.map((t) => (
