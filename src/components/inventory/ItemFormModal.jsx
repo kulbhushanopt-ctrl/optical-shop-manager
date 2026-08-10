@@ -41,6 +41,7 @@ export default function ItemFormModal({ title, initial, inventory, onClose, onSa
 
   return (
     <Modal title={title} onClose={onClose}>
+      <p className="text-[11px] text-slate -mt-1 mb-3">Only Brand, Model, Price, and Stock are required — everything else is optional and can be filled in later.</p>
       <Field label="Type">
         <Select value={f.type} onChange={(e) => set("type")(e.target.value)}>
           {ITEM_TYPES.map((t) => (
