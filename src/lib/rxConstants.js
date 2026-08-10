@@ -10,19 +10,6 @@ function formatPower(n) {
   return n < 0 ? n.toFixed(2) : `+${n.toFixed(2)}`;
 }
 
-// Ordered by magnitude (0.00, then ±0.25, ±0.50, ...) instead of most-
-// negative first -- most prescriptions sit close to 0.00, so this keeps
-// common values a short scroll away instead of behind the whole negative
-// range.
-function powerRangeByMagnitude(maxAbs, step = 0.25) {
-  const out = [formatPower(0)];
-  for (let m = step; m <= maxAbs + 1e-9; m += step) {
-    const n = Math.round(m * 100) / 100;
-    out.push(formatPower(-n), formatPower(n));
-  }
-  return out;
-}
-
 function powerRangeAscending(min, max, step = 0.25) {
   const out = [];
   for (let v = min; v <= max + 1e-9; v += step) out.push(formatPower(Math.round(v * 100) / 100));
@@ -30,10 +17,22 @@ function powerRangeAscending(min, max, step = 0.25) {
 }
 
 // Standard 0.25 D steps for the sphere/cylinder/add power dropdowns in the
-// prescription form.
-export const SPHERE_POWERS = powerRangeByMagnitude(20);
-export const CYL_POWERS = powerRangeByMagnitude(10);
+// prescription form, low to high.
+export const SPHERE_POWERS = powerRangeAscending(-20, 20);
+export const CYL_POWERS = powerRangeAscending(-10, 10);
 export const ADD_POWERS = powerRangeAscending(0.75, 4);
+
+// A mobile <select>'s native picker opens scrolled to whatever option is
+// currently selected. For a symmetric range like sphere/cyl, putting the
+// blank "not chosen yet" placeholder immediately next to 0.00 (instead of
+// at the very start of the list) means opening an empty field lands the
+// picker right in the middle -- 0.00 in view, negative values one swipe up,
+// positive one swipe down -- rather than at the -20.00 end.
+export function withBlankCentered(options) {
+  const zeroIndex = options.indexOf(formatPower(0));
+  if (zeroIndex === -1) return ["", ...options];
+  return [...options.slice(0, zeroIndex), "", ...options.slice(zeroIndex)];
+}
 
 // Standard Snellen visual-acuity notation, best to worst, plus the below-chart
 // readings used once acuity drops too low to read letters.
