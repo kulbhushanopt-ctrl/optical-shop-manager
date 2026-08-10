@@ -48,6 +48,22 @@ export async function createShopRequest({ shopName, phone }) {
   return data;
 }
 
+/* ---------- Staff invites (accepting one) ---------- */
+// Direct SELECT on branch_invites is owner-only, so a freshly-signed-in
+// staff member can't see their own pending invite -- these two RPCs check
+// for and consume it instead.
+export async function fetchMyInvite() {
+  const { data, error } = await supabase.rpc("my_pending_invite");
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+export async function acceptBranchInvite() {
+  const { data, error } = await supabase.rpc("accept_branch_invite");
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- Branches & membership ---------- */
 export async function fetchMyMemberships() {
   const { data, error } = await supabase

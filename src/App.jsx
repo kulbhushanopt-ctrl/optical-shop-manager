@@ -101,7 +101,7 @@ export default function OpticalShopApp() {
   if (checking) return <Spinner />;
   if (!session) return <AuthScreen />;
   if (membershipsLoading) return <Spinner label="Loading your shop…" />;
-  if (memberships.length === 0) return <ShopAccessGate onCreated={handleBranchCreated} />;
+  if (memberships.length === 0) return <ShopAccessGate onCreated={handleBranchCreated} onJoined={loadMemberships} />;
 
   // A branch the admin has disabled (revoked) still shows up as a
   // membership row, but its `branches` embed is filtered out by RLS --

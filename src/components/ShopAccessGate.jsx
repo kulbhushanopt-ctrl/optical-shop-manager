@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Glasses } from "lucide-react";
-import { fetchMyShopRequest, createShopRequest, signOut } from "../lib/api";
+import { fetchMyShopRequest, createShopRequest, fetchMyInvite, acceptBranchInvite, signOut } from "../lib/api";
 import { Field, TextInput, PrimaryBtn, Spinner } from "./shared/ui";
 import BranchOnboarding from "./BranchOnboarding";
 
@@ -24,12 +24,14 @@ function Shell({ title, subtitle, children }) {
   );
 }
 
-// Sits in front of BranchOnboarding for anyone with no branch and no staff
-// invite: instead of blocking them outright, it collects a shop request and
-// shows its status (pending/rejected), handing off to the normal branch
-// creation screen once the owner has approved it.
-export default function ShopAccessGate({ onCreated }) {
+// Sits in front of BranchOnboarding for anyone with no branch: if they have
+// a pending staff invite, it lets them accept it and join directly. If not,
+// instead of blocking them outright, it collects a shop request and shows
+// its status (pending/rejected), handing off to the normal branch creation
+// screen once the owner has approved it.
+export default function ShopAccessGate({ onCreated, onJoined }) {
   const [loading, setLoading] = useState(true);
+  const [invite, setInvite] = useState(null);
   const [request, setRequest] = useState(null);
   const [shopName, setShopName] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,13 +39,40 @@ export default function ShopAccessGate({ onCreated }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchMyShopRequest()
-      .then(setRequest)
-      .catch(() => setRequest(null))
+    Promise.all([fetchMyInvite().catch(() => null), fetchMyShopRequest().catch(() => null)])
+      .then(([inv, req]) => {
+        setInvite(inv);
+        setRequest(req);
+      })
       .finally(() => setLoading(false));
   }, []);
 
+  const acceptInvite = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await acceptBranchInvite();
+      await onJoined?.();
+    } catch (e) {
+      setError("Couldn't accept the invite — please try again.");
+      setBusy(false);
+    }
+  };
+
   if (loading) return <Spinner label="Checking your access…" />;
+
+  if (invite) {
+    return (
+      <Shell title="You've been invited" subtitle={`You've been added as staff for ${invite.branch_name}.`}>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          {error && <p className="text-xs text-warn mb-3">{error}</p>}
+          <PrimaryBtn full disabled={busy} onClick={acceptInvite}>
+            {busy ? "Joining…" : `Join ${invite.branch_name}`}
+          </PrimaryBtn>
+        </div>
+      </Shell>
+    );
+  }
 
   if (request?.status === "approved") {
     return <BranchOnboarding onCreated={onCreated} />;
