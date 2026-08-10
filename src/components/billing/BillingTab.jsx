@@ -189,7 +189,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       )}
 
       {showNew && (
-        <NewInvoiceModal patients={patients} setPatients={setPatients} inventory={inventory} branchId={branchId} onClose={() => setShowNew(false)} onSave={createInvoice} />
+        <NewInvoiceModal patients={patients} setPatients={setPatients} inventory={inventory} branchId={branchId} shopInfo={shopInfo} onClose={() => setShowNew(false)} onSave={createInvoice} />
       )}
       {openInvoice && (
         <InvoiceDetailModal

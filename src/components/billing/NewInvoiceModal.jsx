@@ -1,14 +1,15 @@
 import React, { Suspense, lazy, useState } from "react";
-import { Plus, X, Barcode } from "lucide-react";
+import { Plus, X, Barcode, QrCode } from "lucide-react";
 import { createPatient } from "../../lib/api";
 import { Modal, Field, TextInput, Select, PrimaryBtn, SecondaryBtn } from "../shared/ui";
 import { currency, todayISO, formatDate, invoiceStatus, PAYMENT_METHODS, paymentMethodLabel } from "../../lib/format";
 
 const BarcodeScanner = lazy(() => import("../shared/BarcodeScanner"));
+const UpiQrModal = lazy(() => import("./UpiQrModal"));
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
-export default function NewInvoiceModal({ patients, setPatients, inventory, branchId, onClose, onSave }) {
+export default function NewInvoiceModal({ patients, setPatients, inventory, branchId, onClose, onSave, shopInfo }) {
   const [patientId, setPatientId] = useState(patients[0]?.id || "");
   const [newPatientOpen, setNewPatientOpen] = useState(false);
   const [newPatientName, setNewPatientName] = useState("");
@@ -26,6 +27,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showScanner, setShowScanner] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [showQr, setShowQr] = useState(false);
 
   const addNewPatient = async () => {
     if (!newPatientName.trim()) return;
@@ -312,6 +314,18 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
           <button type="button" onClick={() => setAmountPaidInput("")} className="px-3 rounded-xl text-xs font-semibold whitespace-nowrap bg-border text-slate">Unpaid</button>
         </div>
       </Field>
+      {total > 0 &&
+        (shopInfo?.upi_id ? (
+          <button
+            type="button"
+            onClick={() => setShowQr(true)}
+            className="w-full py-2.5 rounded-xl text-xs font-semibold bg-focusSoft text-ink flex items-center justify-center gap-1.5 mb-3.5"
+          >
+            <QrCode size={14} /> Show UPI QR to collect {currency(balanceLeft > 0 ? balanceLeft : total)}
+          </button>
+        ) : (
+          <p className="text-[11px] text-slate -mt-1.5 mb-3.5">Add a UPI ID in Shop details to show a "Scan to pay" QR here.</p>
+        ))}
       {amountPaid > 0 && (
         <Field label="Payment mode">
           <div className="flex gap-2 flex-wrap">
@@ -340,6 +354,17 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
       </div>
 
       <PrimaryBtn full disabled={!valid} onClick={save}>Save invoice</PrimaryBtn>
+      {showQr && shopInfo?.upi_id && (
+        <Suspense fallback={null}>
+          <UpiQrModal
+            upiId={shopInfo.upi_id}
+            payeeName={shopInfo?.name}
+            amount={balanceLeft > 0 ? balanceLeft : total}
+            note={`Invoice for ${patient?.name || "walk-in customer"}`}
+            onClose={() => setShowQr(false)}
+          />
+        </Suspense>
+      )}
     </Modal>
   );
 }
