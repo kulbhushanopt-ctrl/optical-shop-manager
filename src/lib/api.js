@@ -52,7 +52,7 @@ export async function createShopRequest({ shopName, phone }) {
 export async function fetchMyMemberships() {
   const { data, error } = await supabase
     .from("branch_members")
-    .select("role,branch_id,branches(id,name,address,phone,gstin,google_review_link)");
+    .select("role,branch_id,branches(id,name,address,phone,gstin,google_review_link,upi_id)");
   if (error) throw error;
   return data;
 }

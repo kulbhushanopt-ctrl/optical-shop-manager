@@ -1,7 +1,12 @@
-import React, { useMemo, useRef, useState } from "react";
-import { Glasses, Check, Trash2, MessageCircle } from "lucide-react";
+import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
+import { Glasses, Check, Trash2, MessageCircle, QrCode } from "lucide-react";
 import { Modal, Field, TextInput, PrimaryBtn, ConfirmModal } from "../shared/ui";
 import ShareBar from "../shared/ShareBar";
+
+// The qrcode library is only needed once someone actually opens the
+// payment QR, so it's split into its own chunk instead of bloating every
+// invoice-view page load.
+const UpiQrModal = lazy(() => import("./UpiQrModal"));
 import {
   currency,
   formatDate,
@@ -20,6 +25,7 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
   const [payInput, setPayInput] = useState("");
   const [payMethod, setPayMethod] = useState("cash");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const patient = patients?.find((p) => p.id === invoice.patientId);
   const balanceLeft = Math.max(0, invoice.total - (invoice.amountPaid || 0));
   const grossTotal = invoice.items.reduce((s, l) => s + l.price * l.qty, 0);
@@ -307,6 +313,17 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
 
       {balanceLeft > 0 && (
         <div className="no-print mt-4">
+          {shopInfo?.upi_id ? (
+            <button
+              type="button"
+              onClick={() => setShowQr(true)}
+              className="w-full py-2.5 rounded-xl text-xs font-semibold bg-focusSoft text-ink flex items-center justify-center gap-1.5 mb-3"
+            >
+              <QrCode size={14} /> Show UPI QR to collect {currency(balanceLeft)}
+            </button>
+          ) : (
+            <p className="text-[11px] text-slate mb-3">Add a UPI ID in Shop details to show a "Scan to pay" QR here.</p>
+          )}
           <Field label="Record a payment">
             <div className="flex gap-2">
               <div className="flex-1"><TextInput type="number" value={payInput} onChange={(e) => setPayInput(e.target.value)} placeholder={`up to ${balanceLeft}`} /></div>
@@ -373,6 +390,17 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
           onConfirm={onDelete}
           onClose={() => setConfirmDelete(false)}
         />
+      )}
+      {showQr && shopInfo?.upi_id && (
+        <Suspense fallback={null}>
+          <UpiQrModal
+            upiId={shopInfo.upi_id}
+            payeeName={shopInfo?.name}
+            amount={balanceLeft}
+            note={`Invoice for ${invoice.patientName}`}
+            onClose={() => setShowQr(false)}
+          />
+        </Suspense>
       )}
     </Modal>
   );

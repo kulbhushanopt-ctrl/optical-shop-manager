@@ -9,6 +9,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
   const [phone, setPhone] = useState(shopInfo.phone || "");
   const [gstin, setGstin] = useState(shopInfo.gstin || "");
   const [googleReviewLink, setGoogleReviewLink] = useState(shopInfo.google_review_link || "");
+  const [upiId, setUpiId] = useState(shopInfo.upi_id || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showStaff, setShowStaff] = useState(false);
@@ -23,6 +24,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
         phone: phone.trim() || null,
         gstin: gstin.trim() || null,
         google_review_link: googleReviewLink.trim() || null,
+        upi_id: upiId.trim() || null,
       });
       onBranchUpdated(updated);
       onClose();
@@ -57,6 +59,15 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
           placeholder="https://g.page/r/.../review"
           disabled={!isOwner}
         />
+      </Field>
+      <Field label="UPI ID (optional)">
+        <TextInput
+          value={upiId}
+          onChange={(e) => setUpiId(e.target.value)}
+          placeholder="yourshop@okhdfcbank"
+          disabled={!isOwner}
+        />
+        <p className="text-[10px] text-slate mt-1">Lets you show a "Scan to pay" QR code on invoices, using this UPI ID.</p>
       </Field>
       {error && <p className="text-xs text-warn mb-3">{error}</p>}
 
