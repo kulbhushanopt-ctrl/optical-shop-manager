@@ -116,9 +116,19 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
             </button>
           </>
         ) : (
-          <button onClick={capture} className="w-16 h-16 rounded-full bg-white flex items-center justify-center" aria-label="Capture photo">
-            <div className="w-14 h-14 rounded-full border-2 border-ink" />
-          </button>
+          <>
+            <button
+              onClick={() => galleryInputRef.current?.click()}
+              className="w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center flex-shrink-0"
+              aria-label="Choose from gallery"
+            >
+              <ImageIcon size={18} />
+            </button>
+            <button onClick={capture} className="w-16 h-16 rounded-full bg-white flex items-center justify-center" aria-label="Capture photo">
+              <div className="w-14 h-14 rounded-full border-2 border-ink" />
+            </button>
+            <div className="w-11 h-11 flex-shrink-0" />
+          </>
         )}
       </div>
     </div>
