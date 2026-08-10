@@ -50,6 +50,10 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
     [invoice]
   );
 
+  // Short caption for image/PDF shares -- the image already shows every
+  // detail, so the caption underneath it just needs to identify the shop.
+  const captionText = `${shopInfo?.name || "Optical Shop"}${shopInfo?.phone ? `\nPh: ${shopInfo.phone}` : ""}`;
+
   const receiptText =
     `${shopInfo?.name || "Optical Shop"} — Tax Invoice\n` +
     (shopInfo?.address ? `${shopInfo.address}\n` : "") +
@@ -80,7 +84,8 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
         targetRef={invoiceRef}
         filenameBase={`invoice-${invoice.patientName.replace(/\s+/g, "-").toLowerCase()}-${invoice.date}`}
         shareTitle={`Invoice — ${invoice.patientName}`}
-        shareText={receiptText}
+        shareText={captionText}
+        fullText={receiptText}
       />
 
       {onChangeOrderStatus && (

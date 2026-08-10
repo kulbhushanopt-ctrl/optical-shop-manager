@@ -2,7 +2,13 @@ import React, { useState } from "react";
 import { Printer, FileText, Share2, Loader2, MessageCircle } from "lucide-react";
 import { captureNodeCanvas, canvasToBlob, canvasToPdfBlob, downloadBlob, tryShareFiles, openWhatsapp } from "../../lib/share";
 
-export default function ShareBar({ targetRef, filenameBase, shareTitle, shareText }) {
+// `shareText` is the short caption sent alongside the image/PDF (the image
+// already shows the full detail, so a long caption just duplicates it in
+// the chat). `fullText` is the detailed version used only by "Share as
+// text", which has no image to carry that detail -- defaults to
+// `shareText` if not given.
+export default function ShareBar({ targetRef, filenameBase, shareTitle, shareText, fullText }) {
+  const textForTextOnly = fullText ?? shareText;
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -59,14 +65,14 @@ export default function ShareBar({ targetRef, filenameBase, shareTitle, shareTex
     setMenuOpen(false);
     if (navigator.share) {
       try {
-        await navigator.share({ title: shareTitle, text: shareText });
+        await navigator.share({ title: shareTitle, text: textForTextOnly });
         return;
       } catch (e) {
         /* user cancelled */
       }
     }
     try {
-      await navigator.clipboard.writeText(shareText);
+      await navigator.clipboard.writeText(textForTextOnly);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch (e) {

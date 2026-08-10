@@ -10,6 +10,10 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
   const slipRef = useRef(null);
   const age = calculateAge(patient.dob);
 
+  // Short caption for image/PDF shares -- the image already shows every
+  // detail, so the caption underneath it just needs to identify the shop.
+  const captionText = `${shopInfo?.name || "Optical Shop"}${shopInfo?.phone ? `\nPh: ${shopInfo.phone}` : ""}`;
+
   const slipText =
     `${shopInfo?.name || "Optical Shop"} — Prescription\n` +
     (shopInfo?.address ? `${shopInfo.address}\n` : "") +
@@ -32,7 +36,8 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
         targetRef={slipRef}
         filenameBase={`prescription-${patient.name.replace(/\s+/g, "-").toLowerCase()}-${rx.date}`}
         shareTitle={`Prescription — ${patient.name}`}
-        shareText={slipText}
+        shareText={captionText}
+        fullText={slipText}
       />
 
       <div id="print-area" ref={slipRef} className="bg-card border-[1.5px] border-border rounded-2xl p-5">
