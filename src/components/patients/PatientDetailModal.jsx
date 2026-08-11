@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon } from "lucide-react";
+import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet } from "lucide-react";
 import { Modal, Avatar } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
@@ -7,6 +7,7 @@ import { todayISO } from "../../lib/format";
 import { appointmentReminderMessage } from "../../lib/messages";
 import { openWhatsapp } from "../../lib/share";
 import AddRxModal from "./AddRxModal";
+import AddContactRxModal from "./AddContactRxModal";
 import RxSlipModal from "./RxSlipModal";
 import AppointmentModal from "./AppointmentModal";
 
@@ -29,6 +30,9 @@ export default function PatientDetailModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [slipRx, setSlipRx] = useState(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showContactRx, setShowContactRx] = useState(false);
+  const [editingContactRx, setEditingContactRx] = useState(null);
+  const [confirmDeleteContactRx, setConfirmDeleteContactRx] = useState(null);
 
   const sendReminder = () => {
     if (!appointment) return;
@@ -60,7 +64,29 @@ export default function PatientDetailModal({
     setConfirmDeleteRx(null);
   };
 
+  const addContactRx = (rx) => {
+    const updated = { ...patient, contact_prescriptions: [{ id: uid(), date: todayISO(), ...rx }, ...(patient.contact_prescriptions || [])] };
+    onUpdate(updated);
+    setShowContactRx(false);
+  };
+
+  const saveEditedContactRx = (rx) => {
+    const updated = {
+      ...patient,
+      contact_prescriptions: patient.contact_prescriptions.map((r) => (r.id === editingContactRx.id ? { ...r, ...rx } : r)),
+    };
+    onUpdate(updated);
+    setEditingContactRx(null);
+  };
+
+  const deleteContactRx = (rxId) => {
+    const updated = { ...patient, contact_prescriptions: patient.contact_prescriptions.filter((r) => r.id !== rxId) };
+    onUpdate(updated);
+    setConfirmDeleteContactRx(null);
+  };
+
   const prescriptions = patient.prescriptions || [];
+  const contactPrescriptions = patient.contact_prescriptions || [];
 
   return (
     <Modal title={patient.name} onClose={onClose}>
@@ -143,9 +169,14 @@ export default function PatientDetailModal({
 
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-display text-sm font-semibold text-ink">Glasses prescription</h4>
-        <button onClick={() => setShowRx(true)} className="text-xs font-medium flex items-center gap-1 text-lens">
-          <Plus size={13} /> Add Rx
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowRx(true)} className="text-xs font-medium flex items-center gap-1 text-lens">
+            <Plus size={13} /> Add Rx
+          </button>
+          <button onClick={() => setShowContactRx(true)} className="text-xs font-medium flex items-center gap-1 text-lens" title="Add contact lens prescription">
+            <Droplet size={13} /> Contact Rx
+          </button>
+        </div>
       </div>
 
       {prescriptions.length === 0 ? (
@@ -241,6 +272,68 @@ export default function PatientDetailModal({
       {showRx && <AddRxModal onClose={() => setShowRx(false)} onSave={addRx} />}
       {editingRx && <AddRxModal initial={editingRx} onClose={() => setEditingRx(null)} onSave={saveEditedRx} />}
       {slipRx && <RxSlipModal patient={patient} rx={slipRx} shopInfo={shopInfo} onClose={() => setSlipRx(null)} />}
+
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-display text-sm font-semibold text-ink flex items-center gap-1">
+          <Droplet size={13} className="text-lens" /> Contact lens prescription
+        </h4>
+      </div>
+
+      {contactPrescriptions.length === 0 ? (
+        <p className="text-xs mb-4 text-slate">No contact lens prescriptions recorded yet.</p>
+      ) : (
+        <div className="flex flex-col gap-2 mb-4">
+          {contactPrescriptions.map((rx) => (
+            <div key={rx.id} className="rounded-xl p-3 bg-lensSoft border border-lens/20">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-display text-xs font-semibold text-ink">{formatDate(rx.date)}</span>
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full uppercase bg-lens/15 text-lens">{rx.lensType}</span>
+                </div>
+                {confirmDeleteContactRx === rx.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setConfirmDeleteContactRx(null)} className="text-[10px] px-2 py-0.5 text-slate">Cancel</button>
+                    <button onClick={() => deleteContactRx(rx.id)} className="text-[10px] px-2 py-0.5 rounded-full text-white font-medium bg-warn">Delete</button>
+                  </div>
+                ) : (
+                  <div className="flex gap-1.5">
+                    <button onClick={() => setEditingContactRx(rx)} className="w-6 h-6 rounded-full flex items-center justify-center bg-lensSoft">
+                      <Pencil size={11} className="text-lens" />
+                    </button>
+                    <button onClick={() => setConfirmDeleteContactRx(rx.id)} className="w-6 h-6 rounded-full flex items-center justify-center bg-warnSoft">
+                      <Trash2 size={11} className="text-warn" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div>
+                  <p className="font-semibold text-ink mb-0.5 font-sans">OD</p>
+                  <p className="text-ink">{rx.odPower || "—"}{rx.odCyl ? ` / ${rx.odCyl} x ${rx.odAxis || "—"}` : ""}</p>
+                  <p className="text-slate">BC {rx.odBaseCurve || "—"} · DIA {rx.odDiameter || "—"}</p>
+                  {rx.lensType === "Scleral" && rx.odSag && <p className="text-slate">Sag {rx.odSag}µm</p>}
+                  {rx.odAdd && <p className="text-slate">Add {rx.odAdd}</p>}
+                </div>
+                <div>
+                  <p className="font-semibold text-ink mb-0.5 font-sans">OS</p>
+                  <p className="text-ink">{rx.osPower || "—"}{rx.osCyl ? ` / ${rx.osCyl} x ${rx.osAxis || "—"}` : ""}</p>
+                  <p className="text-slate">BC {rx.osBaseCurve || "—"} · DIA {rx.osDiameter || "—"}</p>
+                  {rx.lensType === "Scleral" && rx.osSag && <p className="text-slate">Sag {rx.osSag}µm</p>}
+                  {rx.osAdd && <p className="text-slate">Add {rx.osAdd}</p>}
+                </div>
+              </div>
+              {rx.brand && <p className="text-[11px] mt-2 text-slate"><span className="font-semibold">Brand:</span> {rx.brand}</p>}
+              {rx.duration && <p className="text-[11px] mt-1 text-slate"><span className="font-semibold">Replace:</span> {rx.duration}</p>}
+              {rx.notes && <p className="text-[11px] mt-1 text-slate">{rx.notes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showContactRx && <AddContactRxModal onClose={() => setShowContactRx(false)} onSave={addContactRx} />}
+      {editingContactRx && (
+        <AddContactRxModal initial={editingContactRx} onClose={() => setEditingContactRx(null)} onSave={saveEditedContactRx} />
+      )}
 
       {canDelete &&
         (confirmDelete ? (

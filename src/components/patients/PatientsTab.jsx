@@ -101,6 +101,7 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
         address: updated.address,
         notes: updated.notes,
         prescriptions: updated.prescriptions,
+        contact_prescriptions: updated.contact_prescriptions,
       });
       setPatients(patients.map((p) => (p.id === saved.id ? saved : p)));
     } catch (e) {

@@ -3,6 +3,11 @@ export const COATINGS = ["Blue Cut", "Hard Coat"];
 export const LENS_INDEXES = ["1.50", "1.56", "1.60", "1.67", "1.74"];
 export const TINTS = ["Clear", "Photochromatic"];
 
+// Contact lens material/fit category for a patient's contact lens
+// prescription -- RGP = Rigid Gas Permeable, the standard clinical term.
+export const CONTACT_LENS_TYPES = ["Soft", "RGP", "Scleral"];
+export const CONTACT_LENS_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
+
 // Signed, two-decimal power string in the same format parseRxPower/parseRxAdd
 // produce (e.g. "-2.00", "+0.75", "+0.00") -- keeps dropdown option values in
 // sync with whatever a voice/AI-scanned power gets normalized to.
