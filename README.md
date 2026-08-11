@@ -11,6 +11,11 @@ prescription history, inventory, GST billing, and sales reporting — backed by 
   staff, manage members, and switch between multiple branches
 - **Patients** — records with photo, contact info, notes, and a full prescription history
   (sphere / cylinder / axis / PD / add power); printable prescription slips
+- **Contact lens Rx** — soft, RGP, and scleral lens prescriptions with base curve, diameter,
+  toric marking, and sag depth; scleral fittings can also attach a corneal topography photo
+  per eye, captured in-page or imported from the gallery
+- **AI Rx scan** — reads a photo of a printed or handwritten prescription (glasses or contact
+  lens) and fills in the form fields for review
 - **Inventory** — frames, sunglasses, lenses, contact lenses, and accessories with stock
   levels, low-stock alerts, and HSN codes
 - **Billing** — invoices built from inventory or custom line items, optional GST (CGST/SGST),

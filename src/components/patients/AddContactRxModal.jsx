@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Camera, Loader2, Sparkles } from "lucide-react";
-import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, TextInput, Select, PrimaryBtn } from "../shared/ui";
+import { Camera, Loader2, Sparkles, ScanEye, X as XIcon } from "lucide-react";
+import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, TextInput, Select, PrimaryBtn, ImageLightbox } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 import { CONTACT_LENS_TYPES, CONTACT_LENS_DURATIONS } from "../../lib/rxConstants";
 import { scanContactPrescription } from "../../lib/api";
@@ -8,10 +8,60 @@ import { parseRxPower, parseRxAxis, parseRxAdd, CONTACT_RX_SCAN_FIELDS, normaliz
 
 const BLANK = {
   lensType: "Soft",
-  odPower: "", odCyl: "", odAxis: "", odMarking: "", odBaseCurve: "", odDiameter: "", odSag: "", odAdd: "",
-  osPower: "", osCyl: "", osAxis: "", osMarking: "", osBaseCurve: "", osDiameter: "", osSag: "", osAdd: "",
+  odPower: "", odCyl: "", odAxis: "", odMarking: "", odBaseCurve: "", odDiameter: "", odSag: "", odAdd: "", odTopography: null,
+  osPower: "", osCyl: "", osAxis: "", osMarking: "", osBaseCurve: "", osDiameter: "", osSag: "", osAdd: "", osTopography: null,
   brand: "", duration: "", notes: "",
 };
+
+// One eye's topography-map capture/preview -- tap to open the in-page
+// camera (which also offers gallery import), tap the thumbnail to view
+// full-size, remove to retake.
+function TopographyField({ label, value, onChange }) {
+  const [showCamera, setShowCamera] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  return (
+    <div>
+      <span className="block text-xs font-medium text-slate mb-1">{label}</span>
+      {value ? (
+        <div className="relative w-full aspect-square">
+          <img
+            src={value}
+            alt={label}
+            onClick={() => setViewing(true)}
+            className="w-full h-full rounded-xl object-cover border border-lens/30"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-warn text-white flex items-center justify-center"
+            aria-label={`Remove ${label} topography`}
+          >
+            <XIcon size={11} />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowCamera(true)}
+          className="w-full aspect-square rounded-xl border-[1.5px] border-dashed border-border flex flex-col items-center justify-center gap-1"
+        >
+          <ScanEye size={16} className="text-slate" />
+          <span className="text-[10px] text-slate text-center px-1">Import topography</span>
+        </button>
+      )}
+      {showCamera && (
+        <CameraCapture
+          onCapture={(dataUrl) => {
+            onChange(dataUrl);
+            setShowCamera(false);
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+      {viewing && <ImageLightbox src={value} alt={label} onClose={() => setViewing(false)} />}
+    </div>
+  );
+}
 
 export default function AddContactRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState({ ...BLANK, ...(initial || {}) });
@@ -124,6 +174,10 @@ export default function AddContactRxModal({ onClose, onSave, initial }) {
           <div className="grid grid-cols-2 gap-2">
             <Field label="OD Sag depth (µm)"><TextInput value={f.odSag} onChange={(e) => set("odSag")(e.target.value)} placeholder="4200" /></Field>
             <Field label="OS Sag depth (µm)"><TextInput value={f.osSag} onChange={(e) => set("osSag")(e.target.value)} placeholder="4200" /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-1">
+            <TopographyField label="OD Corneal topography" value={f.odTopography} onChange={set("odTopography")} />
+            <TopographyField label="OS Corneal topography" value={f.osTopography} onChange={set("osTopography")} />
           </div>
         </div>
       )}

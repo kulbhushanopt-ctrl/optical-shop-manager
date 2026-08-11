@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet } from "lucide-react";
-import { Modal, Avatar } from "../shared/ui";
+import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet, ScanEye } from "lucide-react";
+import { Modal, Avatar, ImageLightbox } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
@@ -33,6 +33,7 @@ export default function PatientDetailModal({
   const [showContactRx, setShowContactRx] = useState(false);
   const [editingContactRx, setEditingContactRx] = useState(null);
   const [confirmDeleteContactRx, setConfirmDeleteContactRx] = useState(null);
+  const [viewingTopography, setViewingTopography] = useState(null);
 
   const sendReminder = () => {
     if (!appointment) return;
@@ -324,6 +325,27 @@ export default function PatientDetailModal({
                   {rx.osAdd && <p className="text-slate">Add {rx.osAdd}</p>}
                 </div>
               </div>
+              {rx.lensType === "Scleral" && (rx.odTopography || rx.osTopography) && (
+                <div className="mt-2">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate mb-1 flex items-center gap-1">
+                    <ScanEye size={11} /> Corneal topography
+                  </p>
+                  <div className="flex gap-2">
+                    {rx.odTopography && (
+                      <button type="button" onClick={() => setViewingTopography(rx.odTopography)} className="flex flex-col items-center gap-0.5">
+                        <img src={rx.odTopography} alt="OD topography" className="w-14 h-14 rounded-lg object-cover border border-lens/30" />
+                        <span className="text-[9px] text-slate">OD</span>
+                      </button>
+                    )}
+                    {rx.osTopography && (
+                      <button type="button" onClick={() => setViewingTopography(rx.osTopography)} className="flex flex-col items-center gap-0.5">
+                        <img src={rx.osTopography} alt="OS topography" className="w-14 h-14 rounded-lg object-cover border border-lens/30" />
+                        <span className="text-[9px] text-slate">OS</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               {rx.brand && <p className="text-[11px] mt-2 text-slate"><span className="font-semibold">Brand:</span> {rx.brand}</p>}
               {rx.duration && <p className="text-[11px] mt-1 text-slate"><span className="font-semibold">Replace:</span> {rx.duration}</p>}
               {rx.notes && <p className="text-[11px] mt-1 text-slate">{rx.notes}</p>}
@@ -335,6 +357,9 @@ export default function PatientDetailModal({
       {showContactRx && <AddContactRxModal onClose={() => setShowContactRx(false)} onSave={addContactRx} />}
       {editingContactRx && (
         <AddContactRxModal initial={editingContactRx} onClose={() => setEditingContactRx(null)} onSave={saveEditedContactRx} />
+      )}
+      {viewingTopography && (
+        <ImageLightbox src={viewingTopography} alt="Corneal topography" onClose={() => setViewingTopography(null)} />
       )}
 
       {canDelete &&

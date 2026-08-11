@@ -280,6 +280,24 @@ export function Spinner({ label }) {
   );
 }
 
+// Full-screen tap-to-view for a stored photo (e.g. a topography map) --
+// mirrors CameraCapture's black overlay so viewing feels like part of the
+// same capture flow instead of a different UI pattern.
+export function ImageLightbox({ src, alt, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/90 flex flex-col" onClick={onClose}>
+      <div className="flex items-center justify-end px-4 py-3 flex-shrink-0">
+        <button onClick={onClose} className="text-white p-1" aria-label="Close">
+          <X size={22} />
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center overflow-hidden px-4 pb-4">
+        <img src={src} alt={alt || "Photo"} className="max-h-full max-w-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+      </div>
+    </div>
+  );
+}
+
 export function ConfirmModal({ title, body, confirmLabel = "Delete", onConfirm, onClose }) {
   return (
     <Modal title={title} onClose={onClose}>
