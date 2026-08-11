@@ -1,18 +1,46 @@
 import React, { useState } from "react";
-import { Phone, MapPin, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon } from "lucide-react";
 import { Modal, Avatar } from "../shared/ui";
-import { formatDate, calculateAge } from "../../lib/format";
+import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
+import { appointmentReminderMessage } from "../../lib/messages";
+import { openWhatsapp } from "../../lib/share";
 import AddRxModal from "./AddRxModal";
 import RxSlipModal from "./RxSlipModal";
+import AppointmentModal from "./AppointmentModal";
 
-export default function PatientDetailModal({ patient, onClose, onUpdate, onDelete, onEdit, canDelete, shopInfo }) {
+export default function PatientDetailModal({
+  patient,
+  onClose,
+  onUpdate,
+  onDelete,
+  onEdit,
+  canDelete,
+  shopInfo,
+  appointment,
+  onBookAppointment,
+  onRescheduleAppointment,
+  onChangeAppointmentStatus,
+}) {
   const [showRx, setShowRx] = useState(false);
   const [editingRx, setEditingRx] = useState(null);
   const [confirmDeleteRx, setConfirmDeleteRx] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [slipRx, setSlipRx] = useState(null);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+
+  const sendReminder = () => {
+    if (!appointment) return;
+    const text = appointmentReminderMessage({
+      shopName: shopInfo?.name,
+      patientName: patient.name,
+      dateLabel: formatDate(appointment.scheduledAt.slice(0, 10)),
+      timeLabel: formatTime(appointment.scheduledAt),
+      reason: appointment.reason,
+    });
+    openWhatsapp(text, patient.phone);
+  };
 
   const addRx = (rx) => {
     const updated = { ...patient, prescriptions: [{ id: uid(), date: todayISO(), ...rx }, ...(patient.prescriptions || [])] };
@@ -54,6 +82,64 @@ export default function PatientDetailModal({ patient, onClose, onUpdate, onDelet
           <Pencil size={12} className="text-ink" />
         </button>
       </div>
+
+      <div className="rounded-xl p-3 mb-4 bg-focusSoft border border-focus/30">
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="font-display text-xs font-semibold text-ink flex items-center gap-1">
+            <CalendarClock size={13} /> Appointment
+          </h4>
+          {appointment && (
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${appointmentStatusTone(appointment.status).text} ${appointmentStatusTone(appointment.status).bg}`}>
+              {appointmentStatusLabel(appointment.status)}
+            </span>
+          )}
+        </div>
+        {appointment ? (
+          <>
+            <p className="text-sm text-ink font-mono">
+              {formatDate(appointment.scheduledAt.slice(0, 10))} · {formatTime(appointment.scheduledAt)}
+            </p>
+            {appointment.reason && <p className="text-xs text-slate mt-1">{appointment.reason}</p>}
+            {appointment.status === "scheduled" && (
+              <div className="flex gap-1.5 mt-2 flex-wrap">
+                {patient.phone && (
+                  <button onClick={sendReminder} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-lensSoft text-lens flex items-center gap-1">
+                    <MessageCircle size={11} /> Remind
+                  </button>
+                )}
+                <button onClick={() => setShowAppointmentModal(true)} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-card border border-border text-ink flex items-center gap-1">
+                  <Pencil size={11} /> Reschedule
+                </button>
+                <button onClick={() => onChangeAppointmentStatus(appointment.id, "completed")} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-goodSoft text-good flex items-center gap-1">
+                  <Check size={11} /> Done
+                </button>
+                <button onClick={() => onChangeAppointmentStatus(appointment.id, "cancelled")} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-warnSoft text-warn flex items-center gap-1">
+                  <XIcon size={11} /> Cancel
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <button onClick={() => setShowAppointmentModal(true)} className="text-xs font-medium text-lens flex items-center gap-1">
+            <Plus size={13} /> Book appointment
+          </button>
+        )}
+      </div>
+      {showAppointmentModal && (
+        <AppointmentModal
+          patient={patient}
+          initial={appointment && appointment.status === "scheduled" ? appointment : null}
+          onClose={() => setShowAppointmentModal(false)}
+          onSave={(data) => {
+            if (appointment && appointment.status === "scheduled") {
+              onRescheduleAppointment(appointment.id, data);
+            } else {
+              onBookAppointment(data);
+            }
+            setShowAppointmentModal(false);
+          }}
+        />
+      )}
 
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-display text-sm font-semibold text-ink">Glasses prescription</h4>

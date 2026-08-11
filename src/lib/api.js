@@ -423,6 +423,21 @@ export async function createAppointment(branchId, appt) {
   return appointmentFromDb(data);
 }
 
+export async function updateAppointment(id, appt) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({
+      scheduled_at: appt.scheduledAt,
+      reason: appt.reason || null,
+      notes: appt.notes || null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return appointmentFromDb(data);
+}
+
 export async function updateAppointmentStatus(id, status) {
   const { data, error } = await supabase
     .from("appointments")

@@ -1,21 +1,41 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { Plus, Search, Download, Users, ChevronRight } from "lucide-react";
-import { createPatient, updatePatient as apiUpdatePatient, deletePatient as apiDeletePatient } from "../../lib/api";
+import { Plus, Search, Download, Users, ChevronRight, CalendarClock } from "lucide-react";
+import {
+  createPatient,
+  updatePatient as apiUpdatePatient,
+  deletePatient as apiDeletePatient,
+  createAppointment,
+  updateAppointment,
+  updateAppointmentStatus,
+} from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
-import { formatDate, todayISO } from "../../lib/format";
+import { formatDate, todayISO, formatTime, appointmentDayLabel } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import AddPatientModal from "./AddPatientModal";
 import PatientDetailModal from "./PatientDetailModal";
 
-export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices }) {
+export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices, appointments, setAppointments }) {
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editPatient, setEditPatient] = useState(null);
   const [openPatientId, setOpenPatientId] = useState(null);
   const [error, setError] = useState("");
 
-  const filtered = patients.filter((p) => `${p.name}${p.phone || ""}`.toLowerCase().includes(query.toLowerCase()));
+  const upcomingFor = (patientId) => appointments.find((a) => a.patientId === patientId && a.status === "scheduled");
+
+  const filtered = patients
+    .filter((p) => `${p.name}${p.phone || ""}`.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => {
+      // Patients with an upcoming appointment float to the top, soonest
+      // first, so staff sees who needs calling/attention right away.
+      const apA = upcomingFor(a.id);
+      const apB = upcomingFor(b.id);
+      if (apA && apB) return apA.scheduledAt < apB.scheduledAt ? -1 : 1;
+      if (apA) return -1;
+      if (apB) return 1;
+      return 0;
+    });
   const openPatient = patients.find((p) => p.id === openPatientId) || null;
 
   const exportPatientsExcel = () => {
@@ -98,6 +118,33 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
     }
   };
 
+  const bookAppointment = async (data) => {
+    try {
+      const saved = await createAppointment(branchId, data);
+      setAppointments([...appointments, saved]);
+    } catch (e) {
+      setError("Couldn't book appointment — please try again.");
+    }
+  };
+
+  const rescheduleAppointment = async (id, data) => {
+    try {
+      const updated = await updateAppointment(id, data);
+      setAppointments(appointments.map((a) => (a.id === updated.id ? updated : a)));
+    } catch (e) {
+      setError("Couldn't update appointment — please try again.");
+    }
+  };
+
+  const changeAppointmentStatus = async (id, status) => {
+    try {
+      const updated = await updateAppointmentStatus(id, status);
+      setAppointments(appointments.map((a) => (a.id === updated.id ? updated : a)));
+    } catch (e) {
+      setError("Couldn't update appointment — please try again.");
+    }
+  };
+
   return (
     <div>
       <SectionHeader
@@ -138,22 +185,34 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
         <EmptyState icon={Users} title="No patients yet" subtitle="Add your first patient to start tracking prescriptions and visits." />
       ) : (
         <div className="px-5 flex flex-col gap-2">
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setOpenPatientId(p.id)}
-              className="rounded-2xl p-3.5 flex items-center gap-3 text-left active:scale-[0.98] transition duration-150 bg-card border border-border/70 shadow-sm shadow-ink/[0.03]"
-            >
-              <Avatar name={p.name} photo={p.photo} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate text-ink">{p.name}</p>
-                <p className="text-xs truncate text-slate">
-                  {p.phone || "No phone"} · {(p.prescriptions || []).length} Rx on file
-                </p>
-              </div>
-              <ChevronRight size={16} className="text-slate" />
-            </button>
-          ))}
+          {filtered.map((p) => {
+            const appt = upcomingFor(p.id);
+            return (
+              <button
+                key={p.id}
+                onClick={() => setOpenPatientId(p.id)}
+                className={`rounded-2xl p-3.5 flex items-center gap-3 text-left active:scale-[0.98] transition duration-150 shadow-sm shadow-ink/[0.03] ${
+                  appt ? "bg-focusSoft border border-focus/40" : "bg-card border border-border/70"
+                }`}
+              >
+                <Avatar name={p.name} photo={p.photo} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate text-ink">{p.name}</p>
+                  <p className="text-xs truncate text-slate">
+                    {p.phone || "No phone"} · {(p.prescriptions || []).length} Rx on file
+                  </p>
+                </div>
+                {appt ? (
+                  <div className="flex items-center gap-1 flex-shrink-0 text-focus" title="Has an upcoming appointment">
+                    <CalendarClock size={13} />
+                    <span className="text-[10px] font-semibold whitespace-nowrap">{appointmentDayLabel(appt.scheduledAt)} {formatTime(appt.scheduledAt)}</span>
+                  </div>
+                ) : (
+                  <ChevronRight size={16} className="text-slate flex-shrink-0" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -168,6 +227,10 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
           onEdit={() => setEditPatient(openPatient)}
           canDelete={isOwner}
           shopInfo={shopInfo}
+          appointment={upcomingFor(openPatient.id)}
+          onBookAppointment={bookAppointment}
+          onRescheduleAppointment={rescheduleAppointment}
+          onChangeAppointmentStatus={changeAppointmentStatus}
         />
       )}
     </div>

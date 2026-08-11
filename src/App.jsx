@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Home, Users, Receipt, Package, AlertTriangle, CalendarClock } from "lucide-react";
+import { Home, Users, Receipt, Package, AlertTriangle } from "lucide-react";
 import { supabase, supabaseConfigError } from "./lib/supabaseClient";
 import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, fetchInvoicePayments, fetchAppointments, signOut } from "./lib/api";
 import { Spinner, BottomNav } from "./components/shared/ui";
@@ -10,7 +10,6 @@ import HomeTab from "./components/HomeTab";
 import PatientsTab from "./components/patients/PatientsTab";
 import InventoryTab from "./components/inventory/InventoryTab";
 import BillingTab from "./components/billing/BillingTab";
-import AppointmentsTab from "./components/appointments/AppointmentsTab";
 
 function AccessRevokedScreen() {
   return (
@@ -169,7 +168,6 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const tabs = [
     { id: "home", label: "Home", icon: Home },
     { id: "patients", label: "Patients", icon: Users },
-    { id: "appointments", label: "Appts", icon: CalendarClock },
     { id: "billing", label: "Billing", icon: Receipt },
     { id: "inventory", label: "Stock", icon: Package },
   ];
@@ -189,17 +187,15 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
         <div className="flex-1 overflow-y-auto pb-24" style={{ WebkitOverflowScrolling: "touch" }}>
           {tab === "home" && <HomeTab patients={patients} inventory={inventory} invoices={invoices} appointments={appointments} setTab={setTab} />}
           {tab === "patients" && (
-            <PatientsTab patients={patients} setPatients={setPatients} branchId={branch.id} isOwner={isOwner} shopInfo={branch} invoices={invoices} />
-          )}
-          {tab === "appointments" && (
-            <AppointmentsTab
-              appointments={appointments}
-              setAppointments={setAppointments}
+            <PatientsTab
               patients={patients}
               setPatients={setPatients}
               branchId={branch.id}
               isOwner={isOwner}
               shopInfo={branch}
+              invoices={invoices}
+              appointments={appointments}
+              setAppointments={setAppointments}
             />
           )}
           {tab === "billing" && (
