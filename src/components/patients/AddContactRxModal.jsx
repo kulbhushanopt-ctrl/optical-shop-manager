@@ -8,8 +8,8 @@ import { parseRxPower, parseRxAxis, parseRxAdd, CONTACT_RX_SCAN_FIELDS, normaliz
 
 const BLANK = {
   lensType: "Soft",
-  odPower: "", odCyl: "", odAxis: "", odBaseCurve: "", odDiameter: "", odSag: "", odAdd: "",
-  osPower: "", osCyl: "", osAxis: "", osBaseCurve: "", osDiameter: "", osSag: "", osAdd: "",
+  odPower: "", odCyl: "", odAxis: "", odMarking: "", odBaseCurve: "", odDiameter: "", odSag: "", odAdd: "",
+  osPower: "", osCyl: "", osAxis: "", osMarking: "", osBaseCurve: "", osDiameter: "", osSag: "", osAdd: "",
   brand: "", duration: "", notes: "",
 };
 
@@ -95,6 +95,20 @@ export default function AddContactRxModal({ onClose, onSave, initial }) {
         <Field label="OD Axis"><VoiceRxInput value={f.odAxis} onChange={set("odAxis")} placeholder="180" parse={parseRxAxis} /></Field>
         <Field label="OS Axis"><VoiceRxInput value={f.osAxis} onChange={set("osAxis")} placeholder="175" parse={parseRxAxis} /></Field>
       </div>
+      {(f.odCyl || f.osCyl) && (
+        <div className="border-t border-dashed border-border pt-3 mt-1 mb-1">
+          <p className="text-[11px] font-medium uppercase tracking-wide mb-2 text-slate">Toric marking / stabilization</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="OD Marking position">
+              <TextInput value={f.odMarking} onChange={(e) => set("odMarking")(e.target.value)} placeholder="6 o'clock, no rotation" />
+            </Field>
+            <Field label="OS Marking position">
+              <TextInput value={f.osMarking} onChange={(e) => set("osMarking")(e.target.value)} placeholder="6 o'clock, no rotation" />
+            </Field>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label="OD Base curve (mm)"><TextInput value={f.odBaseCurve} onChange={(e) => set("odBaseCurve")(e.target.value)} placeholder="8.6" /></Field>
         <Field label="OS Base curve (mm)"><TextInput value={f.osBaseCurve} onChange={(e) => set("osBaseCurve")(e.target.value)} placeholder="8.6" /></Field>

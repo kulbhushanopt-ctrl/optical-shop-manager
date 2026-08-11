@@ -311,6 +311,7 @@ export default function PatientDetailModal({
                   <p className="font-semibold text-ink mb-0.5 font-sans">OD</p>
                   <p className="text-ink">{rx.odPower || "—"}{rx.odCyl ? ` / ${rx.odCyl} x ${rx.odAxis || "—"}` : ""}</p>
                   <p className="text-slate">BC {rx.odBaseCurve || "—"} · DIA {rx.odDiameter || "—"}</p>
+                  {rx.odCyl && rx.odMarking && <p className="text-slate">Mark {rx.odMarking}</p>}
                   {rx.lensType === "Scleral" && rx.odSag && <p className="text-slate">Sag {rx.odSag}µm</p>}
                   {rx.odAdd && <p className="text-slate">Add {rx.odAdd}</p>}
                 </div>
@@ -318,6 +319,7 @@ export default function PatientDetailModal({
                   <p className="font-semibold text-ink mb-0.5 font-sans">OS</p>
                   <p className="text-ink">{rx.osPower || "—"}{rx.osCyl ? ` / ${rx.osCyl} x ${rx.osAxis || "—"}` : ""}</p>
                   <p className="text-slate">BC {rx.osBaseCurve || "—"} · DIA {rx.osDiameter || "—"}</p>
+                  {rx.osCyl && rx.osMarking && <p className="text-slate">Mark {rx.osMarking}</p>}
                   {rx.lensType === "Scleral" && rx.osSag && <p className="text-slate">Sag {rx.osSag}µm</p>}
                   {rx.osAdd && <p className="text-slate">Add {rx.osAdd}</p>}
                 </div>
