@@ -172,7 +172,7 @@ export async function createPatients(branchId, patients) {
     address: p.address || null,
     notes: p.notes || null,
     dob: p.dob || null,
-    prescriptions: [],
+    prescriptions: p.prescriptions || [],
   }));
   const { data, error } = await supabase.from("patients").insert(rows).select();
   if (error) throw error;

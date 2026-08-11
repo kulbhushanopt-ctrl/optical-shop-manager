@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Download, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Upload, Download, CheckCircle2, AlertTriangle, Loader2, Eye } from "lucide-react";
 import { Modal, PrimaryBtn } from "../shared/ui";
 import { createPatients } from "../../lib/api";
+import { uid } from "../../lib/rxConstants";
+import { todayISO } from "../../lib/format";
+import { RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
 
 const FIELD_ALIASES = {
   name: ["name", "full name", "patient name"],
@@ -11,10 +14,30 @@ const FIELD_ALIASES = {
   age: ["age"],
   address: ["address", "addr"],
   notes: ["notes", "note", "remarks"],
+  chiefComplaint: ["chief complaint", "complaint", "reason for visit"],
+  odSphere: ["od sphere", "od sph", "right sphere", "re sphere"],
+  odCyl: ["od cyl", "od cylinder", "right cyl", "re cyl"],
+  odAxis: ["od axis", "right axis", "re axis"],
+  odAdd: ["od add", "right add", "re add"],
+  odVA: ["od va", "od vision", "right va"],
+  osSphere: ["os sphere", "os sph", "left sphere", "le sphere"],
+  osCyl: ["os cyl", "os cylinder", "left cyl", "le cyl"],
+  osAxis: ["os axis", "left axis", "le axis"],
+  osAdd: ["os add", "left add", "le add"],
+  osVA: ["os va", "os vision", "left va"],
+  pd: ["pd", "pupillary distance"],
 };
 
-const TEMPLATE_HEADERS = ["Name", "Phone", "Date of Birth", "Address", "Notes"];
-const TEMPLATE_SAMPLE = ["Jordan Lee", "+91 98765 43210", "1990-05-12", "House 12, MG Road, Chandigarh", "Prefers progressive lenses"];
+const TEMPLATE_HEADERS = [
+  "Name", "Phone", "Date of Birth", "Address", "Notes", "Chief Complaint",
+  "OD Sphere", "OD Cyl", "OD Axis", "OD Add", "OD VA",
+  "OS Sphere", "OS Cyl", "OS Axis", "OS Add", "OS VA", "PD",
+];
+const TEMPLATE_SAMPLE = [
+  "Jordan Lee", "+91 98765 43210", "1990-05-12", "House 12, MG Road, Chandigarh", "Prefers progressive lenses", "Blurry distance vision",
+  "-2.00", "-0.50", "180", "", "6/6",
+  "-1.75", "", "", "", "6/6", "62",
+];
 
 function normalizeHeader(h) {
   return String(h ?? "").trim().toLowerCase();
@@ -61,16 +84,29 @@ function parseRows(rawRows) {
   return rawRows.map((row) => {
     const get = (f) => (fieldMap[f] != null ? row[fieldMap[f]] : undefined);
     const name = String(get("name") ?? "").trim();
+
+    // A row's OD/OS Sphere/Cyl/Axis/Add/VA/PD columns are all optional --
+    // only build a prescription when at least one of them actually has a
+    // value, same fields the AI intake scan fills in.
+    const chiefComplaint = String(get("chiefComplaint") ?? "").trim();
+    const rx = {};
+    RX_SCAN_FIELDS.forEach((k) => {
+      const raw = String(get(k) ?? "").trim();
+      if (raw) rx[k] = normalizeRxValue(k, raw);
+    });
+    const hasRx = Object.keys(rx).length > 0 || !!chiefComplaint;
+
     const patient = {
       name,
       phone: String(get("phone") ?? "").trim(),
       address: String(get("address") ?? "").trim(),
       notes: String(get("notes") ?? "").trim(),
       dob: toDobISO(get("dob"), get("age")),
+      prescriptions: hasRx ? [{ id: uid(), date: todayISO(), chiefComplaint, ...rx }] : [],
     };
     const errors = [];
     if (!name) errors.push("name");
-    return { item: patient, valid: errors.length === 0, errors };
+    return { item: patient, valid: errors.length === 0, errors, hasRx };
   });
 }
 
@@ -139,6 +175,7 @@ export default function ImportPatientsExcelModal({ branchId, onClose, onImported
         <>
           <p className="text-xs text-slate mb-3">
             Upload a spreadsheet with columns like Name, Phone, Date of Birth, Address, Notes — one row per patient. Only Name is required.
+            Add OD/OS Sphere, Cyl, Axis, Add, VA, and PD columns to save a first prescription for that patient too.
           </p>
           <button
             type="button"
@@ -171,7 +208,10 @@ export default function ImportPatientsExcelModal({ branchId, onClose, onImported
                 )}
                 <span className="flex-1 min-w-0 truncate text-ink">{r.item.name || "—"}</span>
                 {r.valid ? (
-                  <span className="text-slate flex-shrink-0">{r.item.phone || "no phone"}</span>
+                  <span className="flex items-center gap-1 flex-shrink-0 text-slate">
+                    {r.hasRx && <Eye size={12} className="text-lens" title="Includes a prescription" />}
+                    {r.item.phone || "no phone"}
+                  </span>
                 ) : (
                   <span className="text-warn flex-shrink-0">missing {r.errors.join(", ")}</span>
                 )}
