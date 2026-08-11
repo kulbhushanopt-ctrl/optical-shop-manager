@@ -380,6 +380,65 @@ export async function fetchInvoicePayments(branchId) {
   return data.map(paymentFromDb);
 }
 
+/* ---------- Appointments ---------- */
+function appointmentFromDb(row) {
+  return {
+    id: row.id,
+    patientId: row.patient_id,
+    patientName: row.patient_name,
+    patientPhone: row.patient_phone,
+    scheduledAt: row.scheduled_at,
+    reason: row.reason,
+    notes: row.notes,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+export async function fetchAppointments(branchId) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .select("*")
+    .eq("branch_id", branchId)
+    .order("scheduled_at", { ascending: true });
+  if (error) throw error;
+  return data.map(appointmentFromDb);
+}
+
+export async function createAppointment(branchId, appt) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .insert({
+      branch_id: branchId,
+      patient_id: appt.patientId || null,
+      patient_name: appt.patientName,
+      patient_phone: appt.patientPhone || null,
+      scheduled_at: appt.scheduledAt,
+      reason: appt.reason || null,
+      notes: appt.notes || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return appointmentFromDb(data);
+}
+
+export async function updateAppointmentStatus(id, status) {
+  const { data, error } = await supabase
+    .from("appointments")
+    .update({ status })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return appointmentFromDb(data);
+}
+
+export async function deleteAppointment(id) {
+  const { error } = await supabase.from("appointments").delete().eq("id", id);
+  if (error) throw error;
+}
+
 /* ---------- AI voice-command inventory entry ---------- */
 // Parses a spoken "add N frames, price X" style sentence into item fields
 // via the parse-inventory-command Edge Function. Returns

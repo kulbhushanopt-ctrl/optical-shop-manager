@@ -64,3 +64,35 @@ export function orderStatusTone(status) {
   if (status === "processing") return { text: "text-focus", bg: "bg-focusSoft" };
   return { text: "text-white", bg: "bg-ink" };
 }
+
+export function appointmentStatusLabel(status) {
+  if (status === "completed") return "Completed";
+  if (status === "cancelled") return "Cancelled";
+  return "Scheduled";
+}
+
+export function appointmentStatusTone(status) {
+  if (status === "completed") return { text: "text-good", bg: "bg-goodSoft" };
+  if (status === "cancelled") return { text: "text-warn", bg: "bg-warnSoft" };
+  return { text: "text-lens", bg: "bg-lensSoft" };
+}
+
+export function formatTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
+}
+
+// Groups a sorted list of appointments into "Today", "Tomorrow", or a plain
+// date label, for the day-by-day list view.
+export function appointmentDayLabel(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const sameDay = (a, b) => a.toDateString() === b.toDateString();
+  if (sameDay(d, today)) return "Today";
+  if (sameDay(d, tomorrow)) return "Tomorrow";
+  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+}

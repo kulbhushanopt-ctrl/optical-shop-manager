@@ -17,3 +17,12 @@ export function orderStatusMessage({ shopName, patientName, orderStatus, reviewL
   }
   return msg;
 }
+
+// Reminder sent to a patient about an upcoming appointment -- includes the
+// reason only if one was given, so a plain checkup doesn't read oddly.
+export function appointmentReminderMessage({ shopName, patientName, dateLabel, timeLabel, reason }) {
+  const shop = shopName || "our shop";
+  const name = patientName || "there";
+  const reasonPart = reason ? ` for ${reason}` : "";
+  return `Hi ${name}, this is a reminder of your appointment${reasonPart} at ${shop} on ${dateLabel} at ${timeLabel}. See you then!`;
+}

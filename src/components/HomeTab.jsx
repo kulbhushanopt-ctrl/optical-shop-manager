@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
-import { Users, Package, Receipt, AlertTriangle, Clock } from "lucide-react";
+import { Users, Package, Receipt, AlertTriangle, Clock, CalendarClock } from "lucide-react";
 import { StatCard, SectionHeader, EmptyState } from "./shared/ui";
-import { currency, formatDate, orderStatusLabel } from "../lib/format";
+import { currency, formatDate, formatTime, orderStatusLabel } from "../lib/format";
 
-export default function HomeTab({ patients, inventory, invoices, setTab }) {
+export default function HomeTab({ patients, inventory, invoices, appointments = [], setTab }) {
   const stats = useMemo(() => {
     const now = new Date();
     const monthRevenue = invoices
@@ -15,8 +15,11 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
     const pendingDue = invoices.reduce((sum, i) => sum + (Number(i.total) - Number(i.amountPaid || 0)), 0);
     const lowStock = inventory.filter((item) => (item.stock ?? 0) <= (item.low ?? 3));
     const awaitingPickup = invoices.filter((i) => i.orderStatus === "processing" || i.orderStatus === "ready");
-    return { monthRevenue, pendingDue, lowStock, awaitingPickup };
-  }, [invoices, inventory]);
+    const todayAppointments = appointments
+      .filter((a) => a.status === "scheduled" && new Date(a.scheduledAt).toDateString() === now.toDateString())
+      .sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));
+    return { monthRevenue, pendingDue, lowStock, awaitingPickup, todayAppointments };
+  }, [invoices, inventory, appointments]);
 
   const recentInvoices = invoices.slice(0, 5);
 
@@ -35,6 +38,26 @@ export default function HomeTab({ patients, inventory, invoices, setTab }) {
           onClick={() => setTab("billing")}
         />
       </div>
+
+      {stats.todayAppointments.length > 0 && (
+        <div className="px-5 mt-5">
+          <p className="text-xs font-semibold text-slate mb-2 flex items-center gap-1">
+            <CalendarClock size={12} /> Today's appointments
+          </p>
+          <div className="space-y-2">
+            {stats.todayAppointments.map((appt) => (
+              <button
+                key={appt.id}
+                onClick={() => setTab("appointments")}
+                className="w-full flex items-center justify-between bg-focusSoft rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
+              >
+                <span className="text-sm text-ink">{appt.patientName}</span>
+                <span className="text-xs font-semibold text-ink font-mono">{formatTime(appt.scheduledAt)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {stats.awaitingPickup.length > 0 && (
         <div className="px-5 mt-5">
