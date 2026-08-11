@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Camera, Loader2, Sparkles } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Camera, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import { scanPrescription } from "../../lib/api";
 import { LENS_TYPES, COATINGS, LENS_INDEXES, TINTS, SPHERE_POWERS, CYL_POWERS, ADD_POWERS, VA_OPTIONS, PD_OPTIONS, withCurrentValue, withBlankCentered } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber, RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
+import { compressImage } from "../../lib/image";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceSelect, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 
@@ -26,6 +27,10 @@ export default function AddRxModal({ onClose, onSave, initial }) {
   const [showCamera, setShowCamera] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
+  // A prescription photo received over WhatsApp already sits in the phone's
+  // gallery/WhatsApp media folder -- this input jumps straight to that
+  // picker instead of opening the live camera first.
+  const whatsappInputRef = useRef(null);
   const set = (k) => (v) => setF({ ...f, [k]: v });
   // Options with the blank placeholder positioned right next to a sensible
   // middle value instead of at the top, so opening an empty field centers
@@ -71,6 +76,18 @@ export default function AddRxModal({ onClose, onSave, initial }) {
     setScanning(false);
   };
 
+  const handleWhatsappPick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const dataUrl = await compressImage(file, 900, 0.8);
+      handleScanPhoto(dataUrl);
+    } catch (err) {
+      setScanNotice("Couldn't read that photo — please try another.");
+    }
+  };
+
   return (
     <Modal title={initial ? "Edit glasses prescription" : "Add glasses prescription"} onClose={onClose}>
       <Field label="Chief complaint">
@@ -78,16 +95,29 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       </Field>
 
       <div className="mb-3.5">
-        <button
-          type="button"
-          onClick={() => setShowCamera(true)}
-          disabled={scanning}
-          className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
-        >
-          {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-          {scanning ? "Reading photo…" : "Scan prescription (AI)"}
-          {!scanning && <Sparkles size={12} />}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCamera(true)}
+            disabled={scanning}
+            className="flex-1 py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
+          >
+            {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+            {scanning ? "Reading photo…" : "Scan prescription (AI)"}
+            {!scanning && <Sparkles size={12} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => whatsappInputRef.current?.click()}
+            disabled={scanning}
+            className="w-11 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens flex items-center justify-center flex-shrink-0 disabled:opacity-60"
+            title="Import a prescription photo from WhatsApp"
+            aria-label="Import from WhatsApp"
+          >
+            <MessageCircle size={16} />
+          </button>
+        </div>
+        <input ref={whatsappInputRef} type="file" accept="image/*" className="hidden" onChange={handleWhatsappPick} />
         {scanNotice && <p className="text-[11px] text-slate mt-1.5">{scanNotice}</p>}
         {showCamera && <CameraCapture onCapture={handleScanPhoto} onClose={() => setShowCamera(false)} />}
       </div>
