@@ -163,6 +163,22 @@ export async function createPatient(branchId, patient) {
   return data;
 }
 
+// Bulk insert for spreadsheet import -- one round trip instead of one per row.
+export async function createPatients(branchId, patients) {
+  const rows = patients.map((p) => ({
+    branch_id: branchId,
+    name: p.name,
+    phone: p.phone || null,
+    address: p.address || null,
+    notes: p.notes || null,
+    dob: p.dob || null,
+    prescriptions: [],
+  }));
+  const { data, error } = await supabase.from("patients").insert(rows).select();
+  if (error) throw error;
+  return data;
+}
+
 export async function updatePatient(id, patch) {
   const { data, error } = await supabase
     .from("patients")

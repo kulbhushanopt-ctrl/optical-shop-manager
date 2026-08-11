@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { Plus, Search, Download, Users, ChevronRight, CalendarClock } from "lucide-react";
+import { Plus, Search, Download, Upload, Users, ChevronRight, CalendarClock } from "lucide-react";
 import {
   createPatient,
   updatePatient as apiUpdatePatient,
@@ -14,10 +14,12 @@ import { formatDate, todayISO, formatTime, appointmentDayLabel } from "../../lib
 import { uid } from "../../lib/rxConstants";
 import AddPatientModal from "./AddPatientModal";
 import PatientDetailModal from "./PatientDetailModal";
+import ImportPatientsExcelModal from "./ImportPatientsExcelModal";
 
 export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices, appointments, setAppointments }) {
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editPatient, setEditPatient] = useState(null);
   const [openPatientId, setOpenPatientId] = useState(null);
   const [error, setError] = useState("");
@@ -152,9 +154,14 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
         title="Patients"
         subtitle={`${patients.length} on file`}
         action={
-          <RoundIconBtn onClick={() => setShowAdd(true)} tone="focus">
-            <Plus size={17} className="text-ink" />
-          </RoundIconBtn>
+          <div className="flex gap-2">
+            <RoundIconBtn onClick={() => setShowImport(true)}>
+              <Upload size={15} />
+            </RoundIconBtn>
+            <RoundIconBtn onClick={() => setShowAdd(true)} tone="focus">
+              <Plus size={17} className="text-ink" />
+            </RoundIconBtn>
+          </div>
         }
       />
       {error && (
@@ -219,6 +226,16 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
 
       {showAdd && <AddPatientModal onClose={() => setShowAdd(false)} onSave={addPatient} />}
       {editPatient && <AddPatientModal initial={editPatient} onClose={() => setEditPatient(null)} onSave={saveEditedPatient} />}
+      {showImport && (
+        <ImportPatientsExcelModal
+          branchId={branchId}
+          onClose={() => setShowImport(false)}
+          onImported={(created) => {
+            setPatients([...created, ...patients]);
+            setShowImport(false);
+          }}
+        />
+      )}
       {openPatient && (
         <PatientDetailModal
           patient={openPatient}
