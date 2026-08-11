@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { Camera, Loader2, Sparkles } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceTextArea, TextInput, Select, PrimaryBtn } from "../shared/ui";
+import CameraCapture from "../shared/CameraCapture";
 import { CONTACT_LENS_TYPES, CONTACT_LENS_DURATIONS } from "../../lib/rxConstants";
-import { parseRxPower, parseRxAxis, parseRxAdd } from "../../lib/rxParse";
+import { scanContactPrescription } from "../../lib/api";
+import { parseRxPower, parseRxAxis, parseRxAdd, CONTACT_RX_SCAN_FIELDS, normalizeContactRxValue } from "../../lib/rxParse";
 
 const BLANK = {
   lensType: "Soft",
@@ -12,10 +15,57 @@ const BLANK = {
 
 export default function AddContactRxModal({ onClose, onSave, initial }) {
   const [f, setF] = useState({ ...BLANK, ...(initial || {}) });
+  const [showCamera, setShowCamera] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanNotice, setScanNotice] = useState("");
   const set = (k) => (v) => setF({ ...f, [k]: v });
+
+  const handleScanPhoto = async (photo) => {
+    setShowCamera(false);
+    setScanning(true);
+    setScanNotice("");
+    try {
+      const result = await scanContactPrescription(photo);
+      if (result?.error === "not_configured") {
+        setScanNotice(result.message || "AI prescription scanning isn't set up yet.");
+      } else if (result?.error) {
+        setScanNotice("Couldn't read that photo — please enter the values manually.");
+      } else {
+        const anyFound = CONTACT_RX_SCAN_FIELDS.some((k) => result?.[k]);
+        setF((prev) => {
+          const next = { ...prev };
+          CONTACT_RX_SCAN_FIELDS.forEach((k) => {
+            if (!next[k] && result?.[k]) next[k] = normalizeContactRxValue(k, result[k]);
+          });
+          return next;
+        });
+        setScanNotice(
+          anyFound ? "Scanned — please review the values below before saving." : "Couldn't make out the values in that photo — please enter them manually."
+        );
+      }
+    } catch (err) {
+      setScanNotice("Couldn't read that photo — please enter the values manually.");
+    }
+    setScanning(false);
+  };
 
   return (
     <Modal title={initial ? "Edit contact lens prescription" : "Add contact lens prescription"} onClose={onClose}>
+      <div className="mb-3.5">
+        <button
+          type="button"
+          onClick={() => setShowCamera(true)}
+          disabled={scanning}
+          className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
+        >
+          {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+          {scanning ? "Reading photo…" : "Scan prescription (AI)"}
+          {!scanning && <Sparkles size={12} />}
+        </button>
+        {scanNotice && <p className="text-[11px] text-slate mt-1.5">{scanNotice}</p>}
+        {showCamera && <CameraCapture onCapture={handleScanPhoto} onClose={() => setShowCamera(false)} />}
+      </div>
+
       <Field label="Lens type">
         <div className="flex gap-2">
           {CONTACT_LENS_TYPES.map((t) => (

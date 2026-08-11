@@ -124,3 +124,25 @@ export function normalizeRxValue(key, value) {
   if (ADD_FIELDS.includes(key)) return parseRxAdd(value);
   return value;
 }
+
+// The contact lens prescription fields an AI photo scan can fill in -- kept
+// in sync with what the scan-contact-rx edge function returns.
+export const CONTACT_RX_SCAN_FIELDS = [
+  "odPower", "odCyl", "odAxis", "odBaseCurve", "odDiameter", "odAdd",
+  "osPower", "osCyl", "osAxis", "osBaseCurve", "osDiameter", "osAdd",
+  "brand",
+];
+
+const CONTACT_POWER_CYL_FIELDS = ["odPower", "osPower", "odCyl", "osCyl"];
+const CONTACT_ADD_FIELDS = ["odAdd", "osAdd"];
+
+// Same idea as normalizeRxValue, for the contact lens field set -- power/cyl
+// get the signed two-decimal form, add gets the positive two-decimal form,
+// base curve/diameter/brand pass through as plain text.
+export function normalizeContactRxValue(key, value) {
+  if (!value) return value;
+  if (CONTACT_POWER_CYL_FIELDS.includes(key)) return parseRxPower(value);
+  if (CONTACT_ADD_FIELDS.includes(key)) return parseRxAdd(value);
+  if (key === "odAxis" || key === "osAxis") return parseRxAxis(value);
+  return value;
+}

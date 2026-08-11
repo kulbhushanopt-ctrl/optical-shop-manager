@@ -480,6 +480,20 @@ export async function scanPrescription(imageDataUrl) {
   return data;
 }
 
+/* ---------- AI contact lens prescription scan ---------- */
+// Reads OD/OS power, cylinder, axis, base curve, diameter, add-power, and
+// brand off a photo of a contact lens prescription/fitting slip via the
+// scan-contact-rx Edge Function. Returns { error: "not_configured", message }
+// until a GEMINI_API_KEY secret is set on the Supabase project -- that's a
+// normal, expected response.
+export async function scanContactPrescription(imageDataUrl) {
+  const { data, error } = await supabase.functions.invoke("scan-contact-rx", {
+    body: { image: imageDataUrl },
+  });
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- AI patient intake scan ---------- */
 // Reads name/age/phone/address plus a full prescription off a photo of a
 // patient intake form via the scan-patient-intake Edge Function, so a new
