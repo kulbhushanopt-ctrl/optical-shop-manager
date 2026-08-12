@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
-import { Plus, Search, Download, Upload, Users, ChevronRight, CalendarClock } from "lucide-react";
+import { Plus, Search, Download, Upload, Users, ChevronRight, CalendarClock, Flag } from "lucide-react";
 import {
   createPatient,
   updatePatient as apiUpdatePatient,
@@ -31,11 +31,17 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
     .sort((a, b) => {
       // Patients with an upcoming appointment float to the top, soonest
       // first, so staff sees who needs calling/attention right away.
+      // Flagged patients (e.g. "needs contact lenses") come next, ahead of
+      // everyone else, as a lighter-weight reminder that doesn't need a
+      // scheduled appointment.
       const apA = upcomingFor(a.id);
       const apB = upcomingFor(b.id);
       if (apA && apB) return apA.scheduledAt < apB.scheduledAt ? -1 : 1;
       if (apA) return -1;
       if (apB) return 1;
+      if (a.flag_note && b.flag_note) return 0;
+      if (a.flag_note) return -1;
+      if (b.flag_note) return 1;
       return 0;
     });
   const openPatient = patients.find((p) => p.id === openPatientId) || null;
@@ -148,6 +154,15 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
     }
   };
 
+  const setPatientFlag = async (id, note) => {
+    try {
+      const saved = await apiUpdatePatient(id, { flag_note: note || null });
+      setPatients(patients.map((p) => (p.id === saved.id ? saved : p)));
+    } catch (e) {
+      setError("Couldn't update flag — please try again.");
+    }
+  };
+
   return (
     <div>
       <SectionHeader
@@ -195,12 +210,13 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
         <div className="px-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((p) => {
             const appt = upcomingFor(p.id);
+            const flagged = !!p.flag_note;
             return (
               <button
                 key={p.id}
                 onClick={() => setOpenPatientId(p.id)}
                 className={`rounded-2xl p-3.5 flex items-center gap-3 text-left active:scale-[0.98] transition duration-150 shadow-sm shadow-ink/[0.03] ${
-                  appt ? "bg-focusSoft border border-focus/40" : "bg-card border border-border/70"
+                  appt ? "bg-focusSoft border border-focus/40" : flagged ? "bg-warnSoft border border-warn/40" : "bg-card border border-border/70"
                 }`}
               >
                 <Avatar name={p.name} photo={p.photo} />
@@ -209,12 +225,19 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
                   <p className="text-xs truncate text-slate">
                     {p.phone || "No phone"} · {(p.prescriptions || []).length} Rx on file
                   </p>
+                  {!appt && flagged && (
+                    <p className="text-[11px] truncate text-warn font-medium mt-0.5 flex items-center gap-1">
+                      <Flag size={11} className="flex-shrink-0" /> {p.flag_note}
+                    </p>
+                  )}
                 </div>
                 {appt ? (
                   <div className="flex items-center gap-1 flex-shrink-0 text-focus" title="Has an upcoming appointment">
                     <CalendarClock size={13} />
                     <span className="text-[10px] font-semibold whitespace-nowrap">{appointmentDayLabel(appt.scheduledAt)} {formatTime(appt.scheduledAt)}</span>
                   </div>
+                ) : flagged ? (
+                  <Flag size={16} className="text-warn flex-shrink-0" title="Flagged for follow-up" />
                 ) : (
                   <ChevronRight size={16} className="text-slate flex-shrink-0" />
                 )}
@@ -249,6 +272,7 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
           onBookAppointment={bookAppointment}
           onRescheduleAppointment={rescheduleAppointment}
           onChangeAppointmentStatus={changeAppointmentStatus}
+          onSetFlag={setPatientFlag}
         />
       )}
     </div>

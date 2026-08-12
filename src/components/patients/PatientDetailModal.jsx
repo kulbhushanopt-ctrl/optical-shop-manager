@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet } from "lucide-react";
-import { Modal, Avatar, ImageLightbox } from "../shared/ui";
+import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet, Flag } from "lucide-react";
+import { Modal, Avatar, ImageLightbox, VoiceInput } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
@@ -23,6 +23,7 @@ export default function PatientDetailModal({
   onBookAppointment,
   onRescheduleAppointment,
   onChangeAppointmentStatus,
+  onSetFlag,
 }) {
   const [showRx, setShowRx] = useState(false);
   const [editingRx, setEditingRx] = useState(null);
@@ -34,6 +35,8 @@ export default function PatientDetailModal({
   const [editingContactRx, setEditingContactRx] = useState(null);
   const [confirmDeleteContactRx, setConfirmDeleteContactRx] = useState(null);
   const [showPhotoLightbox, setShowPhotoLightbox] = useState(false);
+  const [showFlagInput, setShowFlagInput] = useState(false);
+  const [flagDraft, setFlagDraft] = useState("");
 
   const sendReminder = () => {
     if (!appointment) return;
@@ -176,6 +179,64 @@ export default function PatientDetailModal({
           }}
         />
       )}
+
+      <div className="rounded-xl p-3 mb-4 bg-warnSoft border border-warn/30">
+        <h4 className="font-display text-xs font-semibold text-ink flex items-center gap-1 mb-1">
+          <Flag size={13} /> Follow-up flag
+        </h4>
+        {patient.flag_note ? (
+          <>
+            <p className="text-sm text-ink">{patient.flag_note}</p>
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              <button
+                onClick={() => {
+                  setFlagDraft(patient.flag_note);
+                  setShowFlagInput(true);
+                }}
+                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-card border border-border text-ink flex items-center gap-1"
+              >
+                <Pencil size={11} /> Edit
+              </button>
+              <button
+                onClick={() => onSetFlag(patient.id, null)}
+                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-card border border-border text-warn flex items-center gap-1"
+              >
+                <XIcon size={11} /> Clear
+              </button>
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={() => {
+              setFlagDraft("");
+              setShowFlagInput(true);
+            }}
+            className="text-xs font-medium text-warn flex items-center gap-1"
+          >
+            <Plus size={13} /> Flag for follow-up
+          </button>
+        )}
+        {showFlagInput && (
+          <div className="mt-2">
+            <VoiceInput value={flagDraft} onChange={setFlagDraft} placeholder="e.g. Needs contact lenses" />
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => setShowFlagInput(false)} className="flex-1 text-xs font-semibold py-2 rounded-lg text-slate">
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onSetFlag(patient.id, flagDraft.trim());
+                  setShowFlagInput(false);
+                }}
+                disabled={!flagDraft.trim()}
+                className="flex-1 text-xs font-semibold py-2 rounded-lg bg-warn text-white disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center justify-between mb-2">
         <h4 className="font-display text-sm font-semibold text-ink">Glasses prescription</h4>
