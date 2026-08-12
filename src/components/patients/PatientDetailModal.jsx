@@ -4,7 +4,7 @@ import { Modal, Avatar, ImageLightbox, VoiceInput } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
-import { appointmentReminderMessage } from "../../lib/messages";
+import { appointmentReminderMessage, followUpFlagMessage } from "../../lib/messages";
 import { openWhatsapp } from "../../lib/share";
 import AddRxModal from "./AddRxModal";
 import AddContactRxModal from "./AddContactRxModal";
@@ -47,6 +47,12 @@ export default function PatientDetailModal({
       timeLabel: formatTime(appointment.scheduledAt),
       reason: appointment.reason,
     });
+    openWhatsapp(text, patient.phone);
+  };
+
+  const sendFlagMessage = () => {
+    if (!patient.flag_note) return;
+    const text = followUpFlagMessage({ shopName: shopInfo?.name, patientName: patient.name, note: patient.flag_note });
     openWhatsapp(text, patient.phone);
   };
 
@@ -188,6 +194,11 @@ export default function PatientDetailModal({
           <>
             <p className="text-sm text-ink">{patient.flag_note}</p>
             <div className="flex gap-1.5 mt-2 flex-wrap">
+              {patient.phone && (
+                <button onClick={sendFlagMessage} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-lensSoft text-lens flex items-center gap-1">
+                  <MessageCircle size={11} /> Message
+                </button>
+              )}
               <button
                 onClick={() => {
                   setFlagDraft(patient.flag_note);

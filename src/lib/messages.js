@@ -26,3 +26,12 @@ export function appointmentReminderMessage({ shopName, patientName, dateLabel, t
   const reasonPart = reason ? ` for ${reason}` : "";
   return `Hi ${name}, this is a reminder of your appointment${reasonPart} at ${shop} on ${dateLabel} at ${timeLabel}. See you then!`;
 }
+
+// Nudge sent to a patient about whatever their follow-up flag note says
+// (e.g. "Need specs") -- lowercased mid-sentence since it reads more like a
+// dropped-in phrase than a standalone sentence.
+export function followUpFlagMessage({ shopName, patientName, note }) {
+  const shop = shopName || "our shop";
+  const name = patientName || "there";
+  return `Hi ${name}, this is ${shop} — just a reminder about "${note}". Do drop by whenever it's convenient!`;
+}
