@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, RotateCcw, Image as ImageIcon } from "lucide-react";
 import { compressImage } from "../../lib/image";
+import { useModalBackClose } from "../../hooks/useModalBackClose";
 
 // Full-screen in-page camera using getUserMedia, instead of handing off to
 // the device's native camera app. Launching a native app from a file input
@@ -14,6 +15,7 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
   const galleryInputRef = useRef(null);
   const [error, setError] = useState("");
   const [photo, setPhoto] = useState(null);
+  useModalBackClose(onClose);
 
   useEffect(() => {
     let cancelled = false;

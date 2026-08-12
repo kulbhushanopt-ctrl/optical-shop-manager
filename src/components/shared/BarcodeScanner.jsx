@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, Keyboard } from "lucide-react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { useModalBackClose } from "../../hooks/useModalBackClose";
 
 // Full-screen in-page live barcode scanner. Reads continuously from the
 // camera and calls onDetect(text) the moment a barcode is found -- no
@@ -13,6 +14,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   const [error, setError] = useState("");
   const [manualMode, setManualMode] = useState(false);
   const [manualValue, setManualValue] = useState("");
+  useModalBackClose(onClose);
 
   useEffect(() => {
     let cancelled = false;

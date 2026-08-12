@@ -4,12 +4,14 @@ import { X, Share2, Download } from "lucide-react";
 import { canvasToBlob, downloadBlob, tryShareFiles } from "../../lib/share";
 import { buildUpiLink } from "../../lib/upi";
 import { currency } from "../../lib/format";
+import { useModalBackClose } from "../../hooks/useModalBackClose";
 
 export default function UpiQrModal({ upiId, payeeName, amount, note, onClose }) {
   const canvasRef = useRef(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const link = buildUpiLink({ upiId, payeeName, amount, note });
+  useModalBackClose(onClose);
 
   useEffect(() => {
     if (!canvasRef.current) return;

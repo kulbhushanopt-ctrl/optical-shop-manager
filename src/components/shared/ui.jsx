@@ -1,8 +1,10 @@
 import React from "react";
 import { X, Mic, Loader2 } from "lucide-react";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
+import { useModalBackClose } from "../../hooks/useModalBackClose";
 
 export function Modal({ title, onClose, children, wide }) {
+  useModalBackClose(onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-0 sm:px-4 animate-modal-backdrop">
       <div
@@ -224,6 +226,7 @@ export function StatCard({ icon: Icon, label, value, tone = "default", onClick }
 // tapping the image itself does nothing, so a pinch-zoom gesture on mobile
 // doesn't accidentally close the view.
 export function ImageLightbox({ src, alt, onClose }) {
+  useModalBackClose(onClose);
   return (
     <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
       <button
