@@ -1,6 +1,6 @@
 export const LENS_TYPES = ["Single Vision", "Bifocal", "Progressive"];
 export const COATINGS = ["Blue Cut", "Hard Coat"];
-export const LENS_INDEXES = ["1.50", "1.56", "1.60", "1.67", "1.74"];
+export const LENS_INDEXES = ["1.50", "1.56", "1.59", "1.60", "1.67", "1.74"];
 export const TINTS = ["Clear", "Photochromatic"];
 
 // Contact lens material/fit category for a patient's contact lens
