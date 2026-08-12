@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useState } from "react";
 import { Plus, X, Barcode, QrCode } from "lucide-react";
 import { createPatient } from "../../lib/api";
-import { Modal, Field, TextInput, Select, PrimaryBtn, SecondaryBtn } from "../shared/ui";
+import { Modal, Field, TextInput, VoiceInput, VoiceRxInput, Select, PrimaryBtn, SecondaryBtn } from "../shared/ui";
 import { currency, todayISO, formatDate, invoiceStatus, PAYMENT_METHODS, paymentMethodLabel } from "../../lib/format";
+import { parseRxPlainNumber } from "../../lib/rxParse";
 
 const BarcodeScanner = lazy(() => import("../shared/BarcodeScanner"));
 const UpiQrModal = lazy(() => import("./UpiQrModal"));
@@ -161,8 +162,8 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
       {customOpen && (
         <div className="rounded-xl p-3 mb-3 bg-focusSoft border border-focus/40">
           <p className="text-xs font-semibold mb-2 text-ink">Add a custom item</p>
-          <Field label="Description"><TextInput value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder="e.g. Custom lens fitting" /></Field>
-          <Field label="Price"><TextInput type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder="500" /></Field>
+          <Field label="Description"><VoiceInput value={customName} onChange={setCustomName} placeholder="e.g. Custom lens fitting" /></Field>
+          <Field label="Price"><VoiceRxInput type="number" value={customPrice} onChange={setCustomPrice} placeholder="500" parse={parseRxPlainNumber} /></Field>
           <div className="flex gap-2">
             <SecondaryBtn full onClick={() => { setCustomOpen(false); setCustomName(""); setCustomPrice(""); }}>Cancel</SecondaryBtn>
             <PrimaryBtn full disabled={!customName.trim() || customPrice === ""} onClick={addCustomLine}>Add</PrimaryBtn>

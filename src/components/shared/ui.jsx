@@ -87,11 +87,11 @@ export function VoiceInput({ value, onChange, placeholder, type = "text" }) {
 // Same as VoiceInput, but runs dictated speech through `parse` first — used
 // for prescription/power fields so saying "minus two point five" lands as
 // "-2.50" instead of being typed in verbatim. Manual typing is untouched.
-export function VoiceRxInput({ value, onChange, placeholder, parse }) {
+export function VoiceRxInput({ value, onChange, placeholder, parse, type = "text" }) {
   const { listening, supported, start } = useVoiceInput((text) => onChange(parse ? parse(text) : text));
   return (
     <div className="flex items-center gap-2">
-      <TextInput value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      <TextInput type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       <MicButton listening={listening} supported={supported} onClick={start} />
     </div>
   );
