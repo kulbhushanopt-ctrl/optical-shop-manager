@@ -154,7 +154,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
           <EmptyState icon={Search} title="No matching invoices" subtitle="Try a different name or filter." />
         )
       ) : (
-        <div className="px-5 flex flex-col gap-2">
+        <div className="px-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {sorted.map((inv) => {
             const tone = statusTone(inv.status);
             const oTone = orderStatusTone(inv.orderStatus);

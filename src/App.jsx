@@ -6,6 +6,7 @@ import { Spinner, BottomNav } from "./components/shared/ui";
 import AuthScreen from "./components/AuthScreen";
 import ShopAccessGate from "./components/ShopAccessGate";
 import TopBar from "./components/layout/TopBar";
+import Sidebar from "./components/layout/Sidebar";
 import HomeTab from "./components/HomeTab";
 import PatientsTab from "./components/patients/PatientsTab";
 import InventoryTab from "./components/inventory/InventoryTab";
@@ -173,50 +174,55 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   ];
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-paper font-sans">
-      <div className="w-full max-w-md min-h-screen flex flex-col relative bg-paper">
-        <TopBar
-          shopInfo={branch}
-          onBranchUpdated={onBranchUpdated}
-          isOwner={isOwner}
-          branchId={branch.id}
-          memberships={memberships}
-          onSwitchBranch={onSwitchBranch}
-          onBranchCreated={onBranchCreated}
-        />
-        <div className="flex-1 overflow-y-auto pb-24" style={{ WebkitOverflowScrolling: "touch" }}>
-          {tab === "home" && <HomeTab patients={patients} inventory={inventory} invoices={invoices} appointments={appointments} setTab={setTab} />}
-          {tab === "patients" && (
-            <PatientsTab
-              patients={patients}
-              setPatients={setPatients}
-              branchId={branch.id}
-              isOwner={isOwner}
-              shopInfo={branch}
-              invoices={invoices}
-              appointments={appointments}
-              setAppointments={setAppointments}
-            />
-          )}
-          {tab === "billing" && (
-            <BillingTab
-              patients={patients}
-              setPatients={setPatients}
-              inventory={inventory}
-              setInventory={setInventory}
-              invoices={invoices}
-              setInvoices={setInvoices}
-              payments={payments}
-              setPayments={setPayments}
-              branchId={branch.id}
-              isOwner={isOwner}
-              shopInfo={branch}
-            />
-          )}
-          {tab === "inventory" && <InventoryTab inventory={inventory} setInventory={setInventory} branchId={branch.id} isOwner={isOwner} />}
+    <div className="min-h-screen w-full flex justify-center bg-paper md:bg-ink/[0.03] font-sans">
+      <div className="w-full max-w-md md:max-w-5xl xl:max-w-6xl min-h-screen flex relative md:shadow-xl md:shadow-black/5">
+        <Sidebar tabs={tabs} active={tab} onChange={setTab} shopInfo={branch} />
+        <div className="flex-1 min-w-0 flex flex-col relative bg-paper">
+          <TopBar
+            shopInfo={branch}
+            onBranchUpdated={onBranchUpdated}
+            isOwner={isOwner}
+            branchId={branch.id}
+            memberships={memberships}
+            onSwitchBranch={onSwitchBranch}
+            onBranchCreated={onBranchCreated}
+          />
+          <div className="flex-1 overflow-y-auto pb-24 md:pb-6" style={{ WebkitOverflowScrolling: "touch" }}>
+            {tab === "home" && <HomeTab patients={patients} inventory={inventory} invoices={invoices} appointments={appointments} setTab={setTab} />}
+            {tab === "patients" && (
+              <PatientsTab
+                patients={patients}
+                setPatients={setPatients}
+                branchId={branch.id}
+                isOwner={isOwner}
+                shopInfo={branch}
+                invoices={invoices}
+                appointments={appointments}
+                setAppointments={setAppointments}
+              />
+            )}
+            {tab === "billing" && (
+              <BillingTab
+                patients={patients}
+                setPatients={setPatients}
+                inventory={inventory}
+                setInventory={setInventory}
+                invoices={invoices}
+                setInvoices={setInvoices}
+                payments={payments}
+                setPayments={setPayments}
+                branchId={branch.id}
+                isOwner={isOwner}
+                shopInfo={branch}
+              />
+            )}
+            {tab === "inventory" && <InventoryTab inventory={inventory} setInventory={setInventory} branchId={branch.id} isOwner={isOwner} />}
+          </div>
+          <p className="text-center text-[10px] text-slate py-1.5 bg-card border-t border-border">© {new Date().getFullYear()} Kulbhushan Sachdeva</p>
+          <div className="md:hidden">
+            <BottomNav tabs={tabs} active={tab} onChange={setTab} />
+          </div>
         </div>
-        <p className="text-center text-[10px] text-slate py-1.5 bg-card border-t border-border">© {new Date().getFullYear()} Kulbhushan Sachdeva</p>
-        <BottomNav tabs={tabs} active={tab} onChange={setTab} />
       </div>
     </div>
   );

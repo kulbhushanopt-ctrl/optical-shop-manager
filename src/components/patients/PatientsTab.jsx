@@ -192,7 +192,7 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
       {filtered.length === 0 ? (
         <EmptyState icon={Users} title="No patients yet" subtitle="Add your first patient to start tracking prescriptions and visits." />
       ) : (
-        <div className="px-5 flex flex-col gap-2">
+        <div className="px-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((p) => {
             const appt = upcomingFor(p.id);
             return (

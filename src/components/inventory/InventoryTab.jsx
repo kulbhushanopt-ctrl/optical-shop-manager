@@ -158,7 +158,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
           subtitle={isOwner ? "Add frames and lenses to track inventory and pricing." : "No items have been added to this branch yet."}
         />
       ) : (
-        <div className="px-5 flex flex-col gap-2">
+        <div className="px-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => {
             const isLow = item.stock <= item.low;
             return (

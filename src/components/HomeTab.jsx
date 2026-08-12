@@ -26,7 +26,7 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
   return (
     <div className="pb-4">
       <SectionHeader title="Overview" subtitle="Today's snapshot" />
-      <div className="grid grid-cols-2 gap-3 px-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-5">
         <StatCard icon={Users} label="Patients" value={patients.length} onClick={() => setTab("patients")} />
         <StatCard icon={Package} label="Stock items" value={inventory.length} onClick={() => setTab("inventory")} />
         <StatCard icon={Receipt} label="Revenue this month" value={currency(stats.monthRevenue)} tone="good" onClick={() => setTab("billing")} />
@@ -44,11 +44,11 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
           <p className="text-xs font-semibold text-slate mb-2 flex items-center gap-1">
             <CalendarClock size={12} /> Today's appointments
           </p>
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {stats.todayAppointments.map((appt) => (
               <button
                 key={appt.id}
-                onClick={() => setTab("appointments")}
+                onClick={() => setTab("patients")}
                 className="w-full flex items-center justify-between bg-focusSoft rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
               >
                 <span className="text-sm text-ink">{appt.patientName}</span>
@@ -64,7 +64,7 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
           <p className="text-xs font-semibold text-slate mb-2 flex items-center gap-1">
             <Clock size={12} /> Awaiting pickup
           </p>
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {stats.awaitingPickup.slice(0, 4).map((inv) => (
               <button
                 key={inv.id}
@@ -82,7 +82,7 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
       {stats.lowStock.length > 0 && (
         <div className="px-5 mt-5">
           <p className="text-xs font-semibold text-slate mb-2">Low stock</p>
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {stats.lowStock.slice(0, 4).map((item) => (
               <button
                 key={item.id}
@@ -102,7 +102,7 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
         {recentInvoices.length === 0 ? (
           <EmptyState icon={Receipt} title="No invoices yet" subtitle="Create your first bill from the Billing tab" />
         ) : (
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {recentInvoices.map((inv) => (
               <button
                 key={inv.id}
