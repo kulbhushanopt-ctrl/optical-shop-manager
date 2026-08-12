@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, TrendingUp, Receipt, Search } from "lucide-react";
 import { createSale, deleteSale, recordPaymentRpc, updateInvoiceOrderStatus } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState, Avatar } from "../shared/ui";
@@ -14,13 +14,39 @@ const ORDER_FILTERS = [
   { id: "delivered", label: "Delivered" },
 ];
 
-export default function BillingTab({ patients, setPatients, inventory, setInventory, invoices, setInvoices, payments, setPayments, branchId, isOwner, shopInfo }) {
+export default function BillingTab({
+  patients,
+  setPatients,
+  inventory,
+  setInventory,
+  invoices,
+  setInvoices,
+  payments,
+  setPayments,
+  branchId,
+  isOwner,
+  shopInfo,
+  prefillPatientId,
+  onPrefillConsumed,
+}) {
   const [showNew, setShowNew] = useState(false);
+  const [newInvoiceInitialPatientId, setNewInvoiceInitialPatientId] = useState(null);
   const [openInvoiceId, setOpenInvoiceId] = useState(null);
   const [showReport, setShowReport] = useState(false);
   const [orderFilter, setOrderFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+
+  // A "Generate bill" tap from the Patients tab lands here with a patient
+  // already picked -- switches straight into a prefilled New invoice
+  // instead of the usual walk-in default.
+  useEffect(() => {
+    if (prefillPatientId) {
+      setNewInvoiceInitialPatientId(prefillPatientId);
+      setShowNew(true);
+      onPrefillConsumed?.();
+    }
+  }, [prefillPatientId, onPrefillConsumed]);
 
   const openInvoice = invoices.find((i) => i.id === openInvoiceId) || null;
 
@@ -49,6 +75,7 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
         );
       }
       setShowNew(false);
+      setNewInvoiceInitialPatientId(null);
     } catch (e) {
       setError("Couldn't save invoice — please try again.");
     }
@@ -189,7 +216,19 @@ export default function BillingTab({ patients, setPatients, inventory, setInvent
       )}
 
       {showNew && (
-        <NewInvoiceModal patients={patients} setPatients={setPatients} inventory={inventory} branchId={branchId} shopInfo={shopInfo} onClose={() => setShowNew(false)} onSave={createInvoice} />
+        <NewInvoiceModal
+          patients={patients}
+          setPatients={setPatients}
+          inventory={inventory}
+          branchId={branchId}
+          shopInfo={shopInfo}
+          initialPatientId={newInvoiceInitialPatientId}
+          onClose={() => {
+            setShowNew(false);
+            setNewInvoiceInitialPatientId(null);
+          }}
+          onSave={createInvoice}
+        />
       )}
       {openInvoice && (
         <InvoiceDetailModal

@@ -16,7 +16,7 @@ import AddPatientModal from "./AddPatientModal";
 import PatientDetailModal from "./PatientDetailModal";
 import ImportPatientsExcelModal from "./ImportPatientsExcelModal";
 
-export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices, appointments, setAppointments }) {
+export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices, appointments, setAppointments, onGenerateBill }) {
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -272,6 +272,10 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
           onBookAppointment={bookAppointment}
           onRescheduleAppointment={rescheduleAppointment}
           onChangeAppointmentStatus={changeAppointmentStatus}
+          onGenerateBill={(patientId) => {
+            setOpenPatientId(null);
+            onGenerateBill(patientId);
+          }}
           onSetFlag={setPatientFlag}
         />
       )}

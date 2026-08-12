@@ -135,7 +135,16 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const [invoices, setInvoices] = useState([]);
   const [payments, setPayments] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [newInvoicePatientId, setNewInvoicePatientId] = useState(null);
   const isOwner = role === "owner";
+
+  // "Generate bill" from a patient's detail view jumps to Billing with that
+  // patient already picked for the new invoice, instead of the usual
+  // walk-in default.
+  const generateBillFor = (patientId) => {
+    setNewInvoicePatientId(patientId);
+    setTab("billing");
+  };
 
   useEffect(() => {
     (async () => {
@@ -199,6 +208,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 invoices={invoices}
                 appointments={appointments}
                 setAppointments={setAppointments}
+                onGenerateBill={generateBillFor}
               />
             )}
             {tab === "billing" && (
@@ -214,6 +224,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 branchId={branch.id}
                 isOwner={isOwner}
                 shopInfo={branch}
+                prefillPatientId={newInvoicePatientId}
+                onPrefillConsumed={() => setNewInvoicePatientId(null)}
               />
             )}
             {tab === "inventory" && <InventoryTab inventory={inventory} setInventory={setInventory} branchId={branch.id} isOwner={isOwner} />}

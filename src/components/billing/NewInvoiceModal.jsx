@@ -10,8 +10,8 @@ const UpiQrModal = lazy(() => import("./UpiQrModal"));
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
-export default function NewInvoiceModal({ patients, setPatients, inventory, branchId, onClose, onSave, shopInfo }) {
-  const [patientId, setPatientId] = useState(patients[0]?.id || "");
+export default function NewInvoiceModal({ patients, setPatients, inventory, branchId, onClose, onSave, shopInfo, initialPatientId }) {
+  const [patientId, setPatientId] = useState(initialPatientId || patients[0]?.id || "");
   const [newPatientOpen, setNewPatientOpen] = useState(false);
   const [newPatientName, setNewPatientName] = useState("");
   const [newPatientPhone, setNewPatientPhone] = useState("");

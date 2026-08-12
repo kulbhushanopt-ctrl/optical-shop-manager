@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet, Flag } from "lucide-react";
+import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet, Flag, Receipt } from "lucide-react";
 import { Modal, Avatar, ImageLightbox, VoiceInput } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
@@ -24,6 +24,7 @@ export default function PatientDetailModal({
   onRescheduleAppointment,
   onChangeAppointmentStatus,
   onSetFlag,
+  onGenerateBill,
 }) {
   const [showRx, setShowRx] = useState(false);
   const [editingRx, setEditingRx] = useState(null);
@@ -132,6 +133,13 @@ export default function PatientDetailModal({
             <MessageCircle size={13} className="text-lens" />
           </button>
         )}
+        <button
+          onClick={() => onGenerateBill(patient.id)}
+          className="w-7 h-7 rounded-full bg-focusSoft flex items-center justify-center flex-shrink-0"
+          aria-label="Generate bill"
+        >
+          <Receipt size={13} className="text-ink" />
+        </button>
         <button onClick={onEdit} className="w-7 h-7 rounded-full bg-border flex items-center justify-center flex-shrink-0">
           <Pencil size={12} className="text-ink" />
         </button>
