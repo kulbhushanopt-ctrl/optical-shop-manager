@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Camera, Loader2, Sparkles } from "lucide-react";
-import { Modal, Field, VoiceInput, VoiceTextArea, TextInput, PrimaryBtn } from "../shared/ui";
+import { Camera, Loader2, Sparkles, X } from "lucide-react";
+import { Modal, Field, VoiceInput, VoiceTextArea, TextInput, PrimaryBtn, ImageLightbox } from "../shared/ui";
 import { calculateAge } from "../../lib/format";
 import { scanPatientIntake } from "../../lib/api";
 import { RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
@@ -14,6 +14,7 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
   const [notes, setNotes] = useState(initial?.notes || "");
   const [photo, setPhoto] = useState(initial?.photo || null);
   const [showCamera, setShowCamera] = useState(false);
+  const [showPhotoLightbox, setShowPhotoLightbox] = useState(false);
 
   // Only offered when adding a brand-new patient -- one photo of an intake
   // form fills the fields below AND the first prescription in one pass,
@@ -86,18 +87,39 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
   return (
     <Modal title={initial ? "Edit patient" : "New patient"} onClose={onClose}>
       <div className="flex justify-center mb-4">
-        <button onClick={() => setShowCamera(true)} className="relative" type="button">
-          {photo ? (
-            <img src={photo} alt="Patient" className="w-[72px] h-[72px] rounded-full object-cover border-2 border-focus" />
-          ) : (
-            <div className="w-[72px] h-[72px] rounded-full border-[1.5px] border-dashed border-border flex items-center justify-center">
-              <Camera size={22} className="text-slate" />
-            </div>
-          )}
-          <div className="absolute bottom-0 right-0 bg-focus w-6 h-6 rounded-full flex items-center justify-center">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => (photo ? setShowPhotoLightbox(true) : setShowCamera(true))}
+            aria-label={photo ? "View photo" : "Add photo"}
+          >
+            {photo ? (
+              <img src={photo} alt="Patient" className="w-[72px] h-[72px] rounded-full object-cover border-2 border-focus" />
+            ) : (
+              <div className="w-[72px] h-[72px] rounded-full border-[1.5px] border-dashed border-border flex items-center justify-center">
+                <Camera size={22} className="text-slate" />
+              </div>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCamera(true)}
+            className="absolute bottom-0 right-0 bg-focus w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition"
+            aria-label="Retake photo"
+          >
             <Camera size={12} className="text-ink" />
-          </div>
-        </button>
+          </button>
+          {photo && (
+            <button
+              type="button"
+              onClick={() => setPhoto(null)}
+              className="absolute top-0 right-0 bg-warn w-5 h-5 rounded-full flex items-center justify-center active:scale-90 transition"
+              aria-label="Remove photo"
+            >
+              <X size={11} className="text-white" />
+            </button>
+          )}
+        </div>
         {showCamera && (
           <CameraCapture
             onCapture={(dataUrl) => {
@@ -107,6 +129,7 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
             onClose={() => setShowCamera(false)}
           />
         )}
+        {showPhotoLightbox && photo && <ImageLightbox src={photo} alt="Patient" onClose={() => setShowPhotoLightbox(false)} />}
       </div>
 
       {!initial && (

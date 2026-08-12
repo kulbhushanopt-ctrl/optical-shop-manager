@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Phone, MapPin, Pencil, Plus, Printer, Trash2, CalendarClock, MessageCircle, Check, X as XIcon, Droplet } from "lucide-react";
-import { Modal, Avatar } from "../shared/ui";
+import { Modal, Avatar, ImageLightbox } from "../shared/ui";
 import { formatDate, formatTime, calculateAge, appointmentStatusLabel, appointmentStatusTone } from "../../lib/format";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
@@ -33,6 +33,7 @@ export default function PatientDetailModal({
   const [showContactRx, setShowContactRx] = useState(false);
   const [editingContactRx, setEditingContactRx] = useState(null);
   const [confirmDeleteContactRx, setConfirmDeleteContactRx] = useState(null);
+  const [showPhotoLightbox, setShowPhotoLightbox] = useState(false);
 
   const sendReminder = () => {
     if (!appointment) return;
@@ -91,7 +92,16 @@ export default function PatientDetailModal({
   return (
     <Modal title={patient.name} onClose={onClose}>
       <div className="flex items-center gap-3 mb-4">
-        <Avatar name={patient.name} size={48} photo={patient.photo} />
+        {patient.photo ? (
+          <button type="button" onClick={() => setShowPhotoLightbox(true)} aria-label="View photo">
+            <Avatar name={patient.name} size={48} photo={patient.photo} />
+          </button>
+        ) : (
+          <Avatar name={patient.name} size={48} photo={patient.photo} />
+        )}
+        {showPhotoLightbox && patient.photo && (
+          <ImageLightbox src={patient.photo} alt={patient.name} onClose={() => setShowPhotoLightbox(false)} />
+        )}
         <div className="flex-1 min-w-0">
           <div className="text-xs flex items-center gap-1 text-slate">
             <Phone size={11} /> {patient.phone || "No phone on file"}

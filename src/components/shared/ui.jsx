@@ -219,6 +219,25 @@ export function StatCard({ icon: Icon, label, value, tone = "default", onClick }
   );
 }
 
+// Full-screen tap-to-enlarge view for a saved photo (patient pic, booked
+// frame, etc.) -- tapping the backdrop or the close button dismisses it;
+// tapping the image itself does nothing, so a pinch-zoom gesture on mobile
+// doesn't accidentally close the view.
+export function ImageLightbox({ src, alt, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white p-2 rounded-full bg-white/10 active:scale-90 transition"
+        aria-label="Close"
+      >
+        <X size={22} />
+      </button>
+      <img src={src} alt={alt} className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+    </div>
+  );
+}
+
 export function Avatar({ name, size = 38, photo }) {
   const initials = (name || "?")
     .trim()
