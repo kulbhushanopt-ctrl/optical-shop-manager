@@ -50,9 +50,13 @@ export default function PatientDetailModal({
     openWhatsapp(text, patient.phone);
   };
 
-  const sendFlagMessage = () => {
-    if (!patient.flag_note) return;
-    const text = followUpFlagMessage({ shopName: shopInfo?.name, patientName: patient.name, note: patient.flag_note });
+  // General "message this patient" action, always available next to their
+  // details -- uses the flag-reminder wording if they're currently flagged,
+  // otherwise just opens a blank WhatsApp chat with them.
+  const sendPatientMessage = () => {
+    const text = patient.flag_note
+      ? followUpFlagMessage({ shopName: shopInfo?.name, patientName: patient.name, note: patient.flag_note })
+      : "";
     openWhatsapp(text, patient.phone);
   };
 
@@ -123,6 +127,11 @@ export default function PatientDetailModal({
           )}
           {patient.notes && <div className="text-xs mt-1 max-w-[220px] text-slate">{patient.notes}</div>}
         </div>
+        {patient.phone && (
+          <button onClick={sendPatientMessage} className="w-7 h-7 rounded-full bg-lensSoft flex items-center justify-center flex-shrink-0" aria-label="Message on WhatsApp">
+            <MessageCircle size={13} className="text-lens" />
+          </button>
+        )}
         <button onClick={onEdit} className="w-7 h-7 rounded-full bg-border flex items-center justify-center flex-shrink-0">
           <Pencil size={12} className="text-ink" />
         </button>
@@ -194,11 +203,6 @@ export default function PatientDetailModal({
           <>
             <p className="text-sm text-ink">{patient.flag_note}</p>
             <div className="flex gap-1.5 mt-2 flex-wrap">
-              {patient.phone && (
-                <button onClick={sendFlagMessage} className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-lensSoft text-lens flex items-center gap-1">
-                  <MessageCircle size={11} /> Message
-                </button>
-              )}
               <button
                 onClick={() => {
                   setFlagDraft(patient.flag_note);
