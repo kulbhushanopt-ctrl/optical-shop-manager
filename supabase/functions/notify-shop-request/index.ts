@@ -13,16 +13,6 @@ const corsHeaders = {
 
 const OWNER_EMAIL = "kulbhushanopt@gmail.com";
 
-// This function has verify_jwt disabled (it's called by a Postgres trigger,
-// which can't carry a user session), which would otherwise let anyone who
-// finds the URL trigger an arbitrary email through our Resend account. The
-// trigger sends this shared secret as a header; requests without it are
-// rejected. It's a plain constant rather than a managed secret because
-// there's no tool available in this session to set Edge Function secrets --
-// it's never exposed to any client, only to our own database trigger and
-// this function's own server-side code.
-const TRIGGER_SECRET = "12d27c049a5604d27d6b9004a0fbaf68a752e45871d9a0b5b38e1c5856103cd9";
-
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -34,9 +24,32 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
+// This function has verify_jwt disabled (it's called by a Postgres trigger,
+// which can't carry a user session), which would otherwise let anyone who
+// finds the URL trigger an arbitrary email through our Resend account. The
+// trigger sends a shared secret as a header; requests without a match are
+// rejected. That secret lives in Supabase Vault (encrypted at rest, never
+// written to any file in this git-tracked repo) -- this reads it via a
+// service-role-only RPC using the service-role key Supabase auto-injects
+// into every edge function's environment.
+async function fetchTriggerSecret(): Promise<string | null> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceKey) return null;
+  const res = await fetch(`${url}/rest/v1/rpc/get_notify_trigger_secret`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    body: "{}",
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.headers.get("x-trigger-secret") !== TRIGGER_SECRET) {
+
+  const expectedSecret = await fetchTriggerSecret();
+  if (!expectedSecret || req.headers.get("x-trigger-secret") !== expectedSecret) {
     return json({ error: "unauthorized" }, 401);
   }
 
