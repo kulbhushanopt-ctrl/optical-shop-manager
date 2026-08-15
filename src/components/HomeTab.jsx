@@ -13,12 +13,11 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
       })
       .reduce((sum, i) => sum + (Number(i.amountPaid) || 0), 0);
     const pendingDue = invoices.reduce((sum, i) => sum + (Number(i.total) - Number(i.amountPaid || 0)), 0);
-    const lowStock = inventory.filter((item) => (item.stock ?? 0) <= (item.low ?? 3));
     const awaitingPickup = invoices.filter((i) => i.orderStatus === "processing" || i.orderStatus === "ready");
     const todayAppointments = appointments
       .filter((a) => a.status === "scheduled" && new Date(a.scheduledAt).toDateString() === now.toDateString())
       .sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1));
-    return { monthRevenue, pendingDue, lowStock, awaitingPickup, todayAppointments };
+    return { monthRevenue, pendingDue, awaitingPickup, todayAppointments };
   }, [invoices, inventory, appointments]);
 
   const recentInvoices = invoices.slice(0, 5);
@@ -73,24 +72,6 @@ export default function HomeTab({ patients, inventory, invoices, appointments = 
               >
                 <span className="text-sm text-ink">{inv.patientName || "Walk-in"}</span>
                 <span className="text-xs font-semibold text-lens">{orderStatusLabel(inv.orderStatus)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {stats.lowStock.length > 0 && (
-        <div className="px-5 mt-5">
-          <p className="text-xs font-semibold text-slate mb-2">Low stock</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {stats.lowStock.slice(0, 4).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setTab("inventory")}
-                className="w-full flex items-center justify-between bg-warnSoft rounded-xl px-3 py-2.5 text-left active:scale-[0.98] transition duration-150"
-              >
-                <span className="text-sm text-ink">{item.brand ? `${item.brand} ${item.model || ""}` : item.type}</span>
-                <span className="text-xs font-semibold text-warn">{item.stock} left</span>
               </button>
             ))}
           </div>
