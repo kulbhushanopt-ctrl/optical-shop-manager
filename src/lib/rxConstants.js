@@ -25,7 +25,7 @@ function powerRangeAscending(min, max, step = 0.25) {
 // prescription form, low to high.
 export const SPHERE_POWERS = powerRangeAscending(-20, 20);
 export const CYL_POWERS = powerRangeAscending(-10, 10);
-export const ADD_POWERS = powerRangeAscending(0.75, 4);
+export const ADD_POWERS = powerRangeAscending(0.5, 4);
 
 function integerRange(min, max) {
   const out = [];
