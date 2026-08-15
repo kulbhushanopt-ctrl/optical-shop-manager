@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState } from "react";
 import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
-import { ITEM_TYPES, LENS_INDEXES, COATINGS, suggestNextSku } from "../../lib/rxConstants";
+import { ITEM_TYPES, LENS_INDEXES, COATINGS, FRAME_CATEGORIES, suggestNextSku } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
 
 // The barcode decoder library is large and only needed once someone
@@ -21,7 +21,7 @@ const ITEM_PLACEHOLDERS = {
 };
 
 const BLANK_ITEM = {
-  type: "frame", brand: "", model: "", sku: "", price: "", stock: "", low: 3,
+  type: "frame", category: "", brand: "", model: "", sku: "", price: "", stock: "", low: 3,
   power: "", addPower: "", lensIndex: "", coatings: [],
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
@@ -50,6 +50,17 @@ export default function ItemFormModal({ title, initial, inventory, onClose, onSa
         </Select>
       </Field>
 
+      {f.type === "frame" && (
+        <Field label="Category (optional)">
+          <Select value={f.category || ""} onChange={(e) => set("category")(e.target.value)}>
+            <option value="">— No category —</option>
+            {FRAME_CATEGORIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </Select>
+        </Field>
+      )}
+
       <div className="grid grid-cols-2 gap-2">
         <Field label="Brand"><VoiceInput value={f.brand} onChange={set("brand")} placeholder={ITEM_PLACEHOLDERS[f.type]?.brand || "Brand"} /></Field>
         <Field label="Model"><VoiceInput value={f.model} onChange={set("model")} placeholder={ITEM_PLACEHOLDERS[f.type]?.model || "Model"} /></Field>
@@ -68,8 +79,8 @@ export default function ItemFormModal({ title, initial, inventory, onClose, onSa
             </button>
           </div>
           {!initial?.id && !f.sku && inventory && (
-            <button type="button" onClick={() => set("sku")(suggestNextSku(f.type, inventory))} className="text-[10px] text-lens mt-1">
-              Use next: {suggestNextSku(f.type, inventory)}
+            <button type="button" onClick={() => set("sku")(suggestNextSku(f.category || f.type, inventory))} className="text-[10px] text-lens mt-1">
+              Use next: {suggestNextSku(f.category || f.type, inventory)}
             </button>
           )}
         </Field>

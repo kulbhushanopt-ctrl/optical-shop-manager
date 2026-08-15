@@ -3,7 +3,7 @@ import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, File
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
-import { ITEM_TYPES, itemTypeLabel } from "../../lib/rxConstants";
+import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
@@ -186,7 +186,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
                     {item.brand} {item.model}
                   </p>
                   <p className="text-[11px] truncate text-slate font-mono">
-                    {itemTypeLabel(item.type)} · {item.sku} · {currency(item.price)}
+                    {item.category ? frameCategoryLabel(item.category) : itemTypeLabel(item.type)} · {item.sku} · {currency(item.price)}
                     {item.type === "lens" && item.power && ` · ${item.power}${item.addPower ? ` / ${item.addPower}` : ""}`}
                     {item.type === "contact" && item.power && ` · ${item.power}`}
                     {item.type === "contact" && item.baseCurve && ` · BC ${item.baseCurve}`}
@@ -225,6 +225,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       {isOwner && showScanList && (
         <ScanStockListModal
           branchId={branchId}
+          inventory={inventory}
           onClose={() => setShowScanList(false)}
           onImported={(created) => {
             setInventory([...created, ...inventory]);

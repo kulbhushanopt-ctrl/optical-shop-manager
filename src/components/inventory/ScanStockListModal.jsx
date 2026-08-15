@@ -1,25 +1,28 @@
 import React, { useState } from "react";
-import { Camera, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Camera, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Modal, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 import { scanStockList, createInventoryItems } from "../../lib/api";
-import { ITEM_TYPES, uid } from "../../lib/rxConstants";
+import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku } from "../../lib/rxConstants";
 
-// A scanned row's model/code doubles as both `model` and `sku` -- this
-// shop's handwritten lists don't distinguish the two, the code is what
-// both display and barcode lookup use.
+// A scanned row's model/code is used as the starting SKU -- this shop's
+// handwritten lists don't distinguish the two -- but stays independently
+// editable so a category-based SKU (see suggestNextSku below) can replace
+// it without losing the original supplier code from `model`.
 function rowFromScan(r) {
   return {
     localId: uid(),
     brand: r.brand || "",
     model: r.model || "",
+    sku: r.model || "",
+    category: "",
     type: "frame",
     quantity: r.quantity != null ? String(r.quantity) : "1",
     price: r.price != null ? String(r.price) : "",
   };
 }
 
-export default function ScanStockListModal({ branchId, onClose, onImported }) {
+export default function ScanStockListModal({ branchId, inventory, onClose, onImported }) {
   const [showCamera, setShowCamera] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
@@ -56,6 +59,17 @@ export default function ScanStockListModal({ branchId, onClose, onImported }) {
   };
   const removeRow = (localId) => setRows(rows.filter((r) => r.localId !== localId));
 
+  // Generates the next SKU for this row's category, avoiding collisions
+  // with both existing inventory and any other row in this same batch that
+  // already has a SKU under that prefix (so scanning ten "Ladies Metal"
+  // frames in one photo gets LM-001, LM-002, ... instead of all landing on
+  // LM-001).
+  const generateSku = (row) => {
+    if (!row.category) return;
+    const siblingSkus = rows.filter((r) => r.localId !== row.localId).map((r) => r.sku);
+    updateRow(row.localId, { sku: suggestNextSku(row.category, inventory, siblingSkus) });
+  };
+
   const validRows = (rows || []).filter((r) => r.brand.trim() && r.model.trim());
 
   const saveAll = async () => {
@@ -64,9 +78,10 @@ export default function ScanStockListModal({ branchId, onClose, onImported }) {
     try {
       const items = validRows.map((r) => ({
         type: r.type,
+        category: r.category || null,
         brand: r.brand.trim(),
         model: r.model.trim(),
-        sku: r.model.trim(),
+        sku: (r.sku || r.model).trim(),
         price: Number(r.price) || 0,
         stock: Math.max(1, Number(r.quantity) || 1),
         low: 3,
@@ -112,7 +127,7 @@ export default function ScanStockListModal({ branchId, onClose, onImported }) {
                   <TextInput value={r.brand} onChange={(e) => updateRow(r.localId, { brand: e.target.value })} placeholder="Brand" />
                   <TextInput value={r.model} onChange={(e) => updateRow(r.localId, { model: e.target.value })} placeholder="Model / code" />
                 </div>
-                <div className="grid grid-cols-4 gap-2 items-center">
+                <div className="grid grid-cols-4 gap-2 items-center mb-2">
                   <div className="col-span-2">
                     <Select value={r.type} onChange={(e) => updateRow(r.localId, { type: e.target.value })}>
                       {ITEM_TYPES.map((t) => (
@@ -123,6 +138,26 @@ export default function ScanStockListModal({ branchId, onClose, onImported }) {
                   <TextInput type="number" value={r.quantity} onChange={(e) => updateRow(r.localId, { quantity: e.target.value })} placeholder="Qty" />
                   <TextInput type="number" value={r.price} onChange={(e) => updateRow(r.localId, { price: e.target.value })} placeholder="Price" />
                 </div>
+                {r.type === "frame" && (
+                  <div className="grid grid-cols-4 gap-2 items-center mb-2">
+                    <div className="col-span-2">
+                      <Select value={r.category} onChange={(e) => updateRow(r.localId, { category: e.target.value })}>
+                        <option value="">— No category —</option>
+                        {FRAME_CATEGORIES.map((c) => (
+                          <option key={c.id} value={c.id}>{c.label}</option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <TextInput value={r.sku} onChange={(e) => updateRow(r.localId, { sku: e.target.value })} placeholder="SKU" />
+                    </div>
+                  </div>
+                )}
+                {r.type === "frame" && r.category && (
+                  <button onClick={() => generateSku(r)} className="text-[11px] font-medium text-lens flex items-center gap-1 mb-2">
+                    <Wand2 size={11} /> Generate SKU from category
+                  </button>
+                )}
                 {!r.brand.trim() || !r.model.trim() ? (
                   <p className="text-[10px] text-warn mt-1.5">Brand and model are required to add this row.</p>
                 ) : !r.price.trim() ? (

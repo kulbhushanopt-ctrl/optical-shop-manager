@@ -214,6 +214,7 @@ function inventoryToDb(item) {
     duration: item.duration || null,
     contact_type: item.contactType || null,
     hsn_code: item.hsnCode || null,
+    category: item.category || null,
   };
 }
 
@@ -236,6 +237,7 @@ export function inventoryFromDb(row) {
     duration: row.duration,
     contactType: row.contact_type,
     hsnCode: row.hsn_code,
+    category: row.category,
   };
 }
 

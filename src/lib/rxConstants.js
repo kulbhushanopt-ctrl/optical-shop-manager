@@ -76,18 +76,46 @@ export const itemTypeLabel = (id) => ITEM_TYPES.find((t) => t.id === id)?.label 
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
+// Frame sub-categories -- gender x material x tier -- used to give frames a
+// more specific SKU prefix than the broad "FR" every frame otherwise shares
+// (e.g. "LM" for Ladies Metal, "GSX" for Gents Sheet Exclusive). The
+// category id doubles as its SKU prefix.
+export const FRAME_CATEGORIES = [
+  { id: "LM", label: "Ladies Metal" },
+  { id: "LMX", label: "Ladies Metal (Exclusive)" },
+  { id: "LS", label: "Ladies Sheet" },
+  { id: "LSX", label: "Ladies Sheet (Exclusive)" },
+  { id: "LF", label: "Ladies Frameless" },
+  { id: "GM", label: "Gents Metal" },
+  { id: "GMX", label: "Gents Metal (Exclusive)" },
+  { id: "GS", label: "Gents Sheet" },
+  { id: "GSX", label: "Gents Sheet (Exclusive)" },
+  { id: "GF", label: "Gents Frameless" },
+  { id: "KB", label: "Kids Boys" },
+  { id: "KBX", label: "Kids Boys (Exclusive)" },
+  { id: "KG", label: "Kids Girls" },
+  { id: "KGX", label: "Kids Girls (Exclusive)" },
+];
+
+export const frameCategoryLabel = (id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label || id;
+
 const SKU_PREFIXES = { frame: "FR", sunglasses: "SG", lens: "LN", contact: "CL", accessory: "AC" };
 
-// Finds the highest existing "<prefix>-<number>" SKU for this item type and
-// suggests the next one, so nobody has to remember or scroll through stock
-// to find where numbering left off. Keeps at least 3-digit padding (FR-001)
-// but grows naturally past 999 without truncating.
-export function suggestNextSku(type, inventory) {
-  const prefix = SKU_PREFIXES[type] || "SKU";
+// Finds the highest existing "<prefix>-<number>" SKU for this item type (or
+// frame category -- categoryOrType can be either) and suggests the next
+// one, so nobody has to remember or scroll through stock to find where
+// numbering left off. Keeps at least 3-digit padding (FR-001, LM-001) but
+// grows naturally past 999 without truncating. `extraSkus` lets a caller
+// fold in SKUs not yet saved to inventory (e.g. other rows in an unsaved
+// scan batch) so suggestions within one batch don't collide with each
+// other.
+export function suggestNextSku(categoryOrType, inventory, extraSkus) {
+  const prefix = SKU_PREFIXES[categoryOrType] || categoryOrType || "SKU";
   const pattern = new RegExp(`^${prefix}-?(\\d+)$`, "i");
   let max = 0;
-  for (const item of inventory || []) {
-    const m = (item.sku || "").trim().match(pattern);
+  const skus = [...(inventory || []).map((item) => item.sku), ...(extraSkus || [])];
+  for (const sku of skus) {
+    const m = (sku || "").trim().match(pattern);
     if (m) max = Math.max(max, parseInt(m[1], 10));
   }
   const next = max + 1;
