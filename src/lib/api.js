@@ -470,6 +470,19 @@ export async function deleteAppointment(id) {
   if (error) throw error;
 }
 
+/* ---------- AI stock-list scan (bulk inventory intake) ---------- */
+// Reads brand/model/quantity/price off a photo of a handwritten or printed
+// stock list via the scan-stock-list Edge Function. Returns
+// { error: "not_configured", message } until a GEMINI_API_KEY secret is set
+// on the Supabase project -- that's a normal, expected response.
+export async function scanStockList(imageDataUrl) {
+  const { data, error } = await supabase.functions.invoke("scan-stock-list", {
+    body: { image: imageDataUrl },
+  });
+  if (error) throw error;
+  return data;
+}
+
 /* ---------- AI voice-command inventory entry ---------- */
 // Parses a spoken "add N frames, price X" style sentence into item fields
 // via the parse-inventory-command Edge Function. Returns
