@@ -36,7 +36,7 @@ function LabelStrip({ shopName, primary, sku, price }) {
         {price != null && <p className="text-[12px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
       <div className="flex items-center justify-center overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
-        <BarcodeSvg value={sku} height={30} width={2} fontSize={10} style={BARCODE_STYLE} />
+        <BarcodeSvg value={sku} height={24} width={2} fontSize={14} style={BARCODE_STYLE} />
       </div>
     </div>
   );
