@@ -4,22 +4,36 @@ import { Upload, Download, CheckCircle2, AlertTriangle, Loader2, RefreshCw } fro
 import { Modal, PrimaryBtn } from "../shared/ui";
 import { notifyFilePickerOpening } from "../../hooks/useModalBackClose";
 import { createInventoryItems, updateInventoryItem } from "../../lib/api";
-import { ITEM_TYPES } from "../../lib/rxConstants";
+import { ITEM_TYPES, FRAME_CATEGORIES, detectCategoryFromText } from "../../lib/rxConstants";
 import { currency } from "../../lib/format";
 
 const FIELD_ALIASES = {
-  type: ["type", "item type", "category"],
+  type: ["type", "item type"],
+  category: ["category", "frame category"],
   brand: ["brand", "brand name", "make"],
   model: ["model", "model name", "model number", "product"],
   sku: ["sku", "code", "color code", "item code"],
   price: ["price", "mrp", "selling price", "rate"],
+  purchasePrice: ["purchase price", "purchase cost", "cost price", "cost"],
   stock: ["stock", "qty", "quantity", "in stock", "count"],
   low: ["low", "low stock", "low stock at", "reorder level", "min stock"],
   hsnCode: ["hsn", "hsn code"],
 };
 
-const TEMPLATE_HEADERS = ["Type", "Brand", "Model", "SKU", "Price", "Stock", "Low Stock At", "HSN Code"];
-const TEMPLATE_SAMPLE = ["Frame", "Ray-Ban", "RB2140", "FR-1001", 2000, 10, 3, "9004"];
+const TEMPLATE_HEADERS = ["Type", "Category", "Brand", "Model", "SKU", "Purchase Price", "Price", "Stock", "Low Stock At", "HSN Code"];
+const TEMPLATE_SAMPLE = ["Frame", "Gents Metal", "Ray-Ban", "RB2140", "FR-1001", 1200, 2000, 10, 3, "9004"];
+
+// A spreadsheet's Category column is almost always loose text like "ladies
+// sheet" or "gents metal" rather than the exact code ("LS", "GM") the app
+// stores -- match it the same way voice/text commands do. A cell that's
+// already an exact code (any case) is trusted directly first.
+function resolveCategory(raw) {
+  const norm = String(raw ?? "").trim();
+  if (!norm) return "";
+  const byCode = FRAME_CATEGORIES.find((c) => c.id.toLowerCase() === norm.toLowerCase());
+  if (byCode) return byCode.id;
+  return detectCategoryFromText(norm) || "";
+}
 
 function normalizeHeader(h) {
   return String(h ?? "").trim().toLowerCase();
@@ -67,26 +81,31 @@ function parseRows(rawRows, existingInventory) {
   const fieldMap = buildFieldMap(Object.keys(rawRows[0]));
   return rawRows.map((row) => {
     const get = (f) => (fieldMap[f] != null ? row[fieldMap[f]] : undefined);
-    const brand = String(get("brand") ?? "").trim();
-    const model = String(get("model") ?? "").trim();
+    const type = resolveType(get("type"));
+    const category = type === "frame" ? resolveCategory(get("category")) : "";
     const price = toNumber(get("price"));
+    const purchasePrice = toNumber(get("purchasePrice"));
     const stock = toNumber(get("stock"));
     const low = toNumber(get("low"));
     const item = {
-      type: resolveType(get("type")),
-      brand,
-      model,
+      type,
+      category: category || null,
+      brand: String(get("brand") ?? "").trim(),
+      model: String(get("model") ?? "").trim(),
       sku: String(get("sku") ?? "").trim(),
       price,
-      stock,
+      purchasePrice,
+      stock: stock != null ? stock : 1,
       low: low != null ? low : 3,
       hsnCode: String(get("hsnCode") ?? "").trim(),
     };
+    // Matches the same required-field rule as the manual Add Item form --
+    // brand/model/stock are all optional there (stock defaults to 1), and
+    // category is only required for frames.
     const errors = [];
-    if (!brand) errors.push("brand");
-    if (!model) errors.push("model");
+    if (type === "frame" && !category) errors.push("category");
     if (price == null) errors.push("price");
-    if (stock == null) errors.push("stock");
+    if (!item.sku) errors.push("sku");
     const match = errors.length === 0 ? findMatch(item, existingInventory) : null;
     return { item, valid: errors.length === 0, errors, match };
   });
@@ -176,7 +195,8 @@ export default function ImportExcelModal({ branchId, inventory, onClose, onImpor
       {!rows ? (
         <>
           <p className="text-xs text-slate mb-3">
-            Upload a spreadsheet with columns like Type, Brand, Model, SKU, Price, Stock — one row per item.
+            Upload a spreadsheet with columns like Type, Category, Brand, Model, SKU, Price, Stock — one row per item.
+            Only Price and SKU are required (plus Category for frames); Stock defaults to 1 if left blank.
           </p>
           <button
             type="button"

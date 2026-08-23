@@ -99,6 +99,33 @@ export const FRAME_CATEGORIES = [
 
 export const frameCategoryLabel = (id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label || id;
 
+// Free-text category detection -- shared by voice/text commands and Excel
+// import, since neither can rely on getting an exact category code like
+// "LM" typed/spoken; both need to map loose phrasing ("gents metal",
+// "ladies sheet") onto the right code.
+export function normalizeSpeechForCategory(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/\bgiants?\b/g, "gents")
+    .replace(/\bmen'?s?\b/g, "gents")
+    .replace(/\bwomen'?s?\b/g, "ladies")
+    .replace(/\bladys?\b/g, "ladies");
+}
+
+export function detectCategoryFromText(text) {
+  const norm = normalizeSpeechForCategory(text);
+  let best = null;
+  let bestWordCount = 0;
+  for (const cat of FRAME_CATEGORIES) {
+    const words = cat.label.toLowerCase().replace(/[()]/g, "").split(/\s+/).filter(Boolean);
+    if (words.every((w) => norm.includes(w)) && words.length > bestWordCount) {
+      best = cat.id;
+      bestWordCount = words.length;
+    }
+  }
+  return best;
+}
+
 const SKU_PREFIXES = { frame: "FR", sunglasses: "SG", lens: "LN", contact: "CL", accessory: "AC" };
 
 // Finds the highest existing "<prefix>-<number>" SKU for this item type (or
