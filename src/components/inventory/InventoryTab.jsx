@@ -10,13 +10,41 @@ import {
 } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
-import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
+import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku, FRAME_CATEGORIES } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
 import ScanStockListModal from "./ScanStockListModal";
 import TextCommandModal from "./TextCommandModal";
 import PrintLabelsModal from "./PrintLabelsModal";
+
+// The AI doesn't reliably catch a spoken category (e.g. voice recognition
+// mishearing "gents" as "giants" trips it up) -- this is a deterministic
+// backstop that just checks whether every word of a category's own label
+// appears in the sentence, so a clear phrase like "gents metal" still maps
+// to GM even when the AI's own category field comes back empty.
+function normalizeSpeechForCategory(text) {
+  return text
+    .toLowerCase()
+    .replace(/\bgiants?\b/g, "gents")
+    .replace(/\bmen'?s?\b/g, "gents")
+    .replace(/\bwomen'?s?\b/g, "ladies")
+    .replace(/\bladys?\b/g, "ladies");
+}
+
+function detectCategoryFromText(text) {
+  const norm = normalizeSpeechForCategory(text);
+  let best = null;
+  let bestWordCount = 0;
+  for (const cat of FRAME_CATEGORIES) {
+    const words = cat.label.toLowerCase().replace(/[()]/g, "").split(/\s+/).filter(Boolean);
+    if (words.every((w) => norm.includes(w)) && words.length > bestWordCount) {
+      best = cat.id;
+      bestWordCount = words.length;
+    }
+  }
+  return best;
+}
 
 // A single spoken number is either how many units of ONE named item to
 // stock, or how many SEPARATE un-named items to create -- never both (see
@@ -83,6 +111,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       if (result?.error) {
         return "Didn't catch that — please try again or add the item manually.";
       }
+      const category = result.category || detectCategoryFromText(text) || "";
       const qty = Math.max(0, Math.min(100, Number(result.quantity) || 0));
       if (qty > 1) {
         // "Twenty frames of gents metal" -- no single brand/model was named,
@@ -91,7 +120,6 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         // blank for each; the shopkeeper fills those in per frame later
         // (the same "generate now, detail later" flow as blank labels).
         const type = ITEM_TYPES.some((t) => t.id === result.type) ? result.type : "frame";
-        const category = result.category || "";
         const price = result.price != null ? Number(result.price) : 0;
         const skusSoFar = [];
         const items = [];
@@ -104,7 +132,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         setInventory([...created, ...inventory]);
         return null;
       }
-      setVoiceDraft(voicePrefill(result, inventory));
+      setVoiceDraft(voicePrefill({ ...result, category }, inventory));
       return null;
     } catch (e) {
       return "Didn't catch that — please try again or add the item manually.";
