@@ -49,7 +49,7 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
     if (existing) {
       setLines(lines.map((l) => (l.itemId === item.id ? { ...l, qty: Math.min(l.maxStock, l.qty + 1) } : l)));
     } else {
-      setLines([...lines, { itemId: item.id, name: `${item.brand} ${item.model}`, price: item.price, qty: 1, maxStock: item.stock, hsnCode: item.hsnCode || "", discount: 0 }]);
+      setLines([...lines, { itemId: item.id, name: `${item.brand} ${item.model}`, price: item.price, qty: 1, maxStock: item.stock, hsnCode: item.hsnCode || "", discount: 0, discountMode: "amount", discountInput: "" }]);
     }
     setPickerOpen(false);
   };
@@ -65,16 +65,53 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
   };
   const addCustomLine = () => {
     if (!customName.trim() || customPrice === "") return;
-    setLines([...lines, { itemId: null, name: customName.trim(), price: Number(customPrice), qty: 1, maxStock: Infinity, custom: true, hsnCode: "", discount: 0 }]);
+    setLines([...lines, { itemId: null, name: customName.trim(), price: Number(customPrice), qty: 1, maxStock: Infinity, custom: true, hsnCode: "", discount: 0, discountMode: "amount", discountInput: "" }]);
     setCustomName("");
     setCustomPrice("");
     setCustomOpen(false);
   };
   const changeQty = (idx, delta) => {
-    setLines(lines.map((l, i) => (i === idx ? { ...l, qty: Math.max(1, Math.min(l.maxStock, l.qty + delta)) } : l)));
+    setLines(lines.map((l, i) => {
+      if (i !== idx) return l;
+      const qty = Math.max(1, Math.min(l.maxStock, l.qty + delta));
+      const lineTotal = l.price * qty;
+      // A percentage discount should scale with quantity (10% stays 10%
+      // however many are bought) -- an amount discount just gets capped if
+      // it now exceeds the new, smaller line total.
+      const discount =
+        l.discountMode === "percent"
+          ? (Math.min(100, Number(l.discountInput) || 0) / 100) * lineTotal
+          : Math.min(l.discount || 0, lineTotal);
+      return { ...l, qty, discount };
+    }));
   };
+  // Discount can be typed as either a flat rupee amount or a percentage of
+  // the line total -- `discount` (₹) is what every downstream total
+  // calculation uses, while `discountInput`/`discountMode` track what the
+  // shopkeeper actually typed so the box keeps showing their own unit
+  // instead of a converted number.
   const changeDiscount = (idx, value) => {
-    setLines(lines.map((l, i) => (i === idx ? { ...l, discount: Math.max(0, Number(value) || 0) } : l)));
+    setLines(lines.map((l, i) => {
+      if (i !== idx) return l;
+      const lineTotal = l.price * l.qty;
+      const raw = Math.max(0, Number(value) || 0);
+      const discount = l.discountMode === "percent" ? (Math.min(100, raw) / 100) * lineTotal : Math.min(raw, lineTotal);
+      return { ...l, discountInput: value, discount };
+    }));
+  };
+  const toggleDiscountMode = (idx) => {
+    setLines(lines.map((l, i) => {
+      if (i !== idx) return l;
+      const lineTotal = l.price * l.qty;
+      const nextMode = l.discountMode === "percent" ? "amount" : "percent";
+      const nextInput =
+        nextMode === "percent"
+          ? lineTotal > 0
+            ? String(Math.round(((l.discount || 0) / lineTotal) * 10000) / 100)
+            : "0"
+          : String(l.discount || 0);
+      return { ...l, discountMode: nextMode, discountInput: nextInput };
+    }));
   };
   const removeLine = (idx) => setLines(lines.filter((_, i) => i !== idx));
 
@@ -192,8 +229,23 @@ export default function NewInvoiceModal({ patients, setPatients, inventory, bran
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-wide flex-shrink-0 text-slate">Discount ₹</span>
-                <TextInput type="number" value={l.discount || ""} onChange={(e) => changeDiscount(idx, e.target.value)} placeholder="0" className="!py-1 !text-xs" />
+                <button
+                  type="button"
+                  onClick={() => toggleDiscountMode(idx)}
+                  className="text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 px-2 py-1 rounded-lg bg-border text-slate"
+                >
+                  Discount {l.discountMode === "percent" ? "%" : "₹"}
+                </button>
+                <TextInput
+                  type="number"
+                  value={l.discountInput ?? ""}
+                  onChange={(e) => changeDiscount(idx, e.target.value)}
+                  placeholder="0"
+                  className="!py-1 !text-xs"
+                />
+                {l.discountMode === "percent" && l.discount > 0 && (
+                  <span className="text-[10px] text-slate font-mono flex-shrink-0">= {currency(l.discount)}</span>
+                )}
               </div>
             </div>
           ))}
