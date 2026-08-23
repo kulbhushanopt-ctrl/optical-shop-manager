@@ -20,12 +20,13 @@ const LABEL_WIDTH = "6cm";
 const LABEL_HEIGHT = "1.2cm";
 const HALF_WIDTH = "3cm";
 
-// The barcode is rendered internally at a fixed module width, then scaled
-// via CSS to exactly fill whatever room its half has -- since a 3cm column
-// is extremely tight, this uses every available bit of width instead of a
-// guessed fixed size that could either overflow a long SKU or waste space
-// on a short one.
-const BARCODE_STYLE = { width: "100%", height: "auto", display: "block" };
+// Stretched to fill both the full width AND full height of its half,
+// rather than "auto" height (which locks to the barcode's natural aspect
+// ratio and was capping how tall the bars/SKU text could get regardless of
+// how big we generated them). Stretching vertically doesn't hurt scanning
+// -- a scanner only reads the horizontal pattern of bar/space widths along
+// its scan line, so taller bars are just easier to read, not different data.
+const BARCODE_STYLE = { width: "100%", height: "100%", display: "block" };
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (
@@ -36,7 +37,7 @@ function LabelStrip({ shopName, primary, sku, price }) {
         {price != null && <p className="text-[12px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
       <div className="flex items-center justify-center overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
-        <BarcodeSvg value={sku} height={20} width={2} fontSize={16} style={BARCODE_STYLE} />
+        <BarcodeSvg value={sku} height={24} width={2} fontSize={16} style={BARCODE_STYLE} />
       </div>
     </div>
   );
