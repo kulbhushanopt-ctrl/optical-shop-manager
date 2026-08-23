@@ -11,14 +11,21 @@ const ALL_CATEGORIES = [
   ...NON_FRAME_TYPES.map((t) => ({ id: t.id, label: itemTypeLabel(t.id) })),
 ];
 
-// This is a fold-in-half tag: the full printed strip is 4in long, but the
-// shop physically folds it at the 2in center mark so it ends up as a 2in
+// This is a fold-in-half tag: the full printed strip is 6cm long, but the
+// shop physically folds it at the 3cm center mark so it ends up as a 3cm
 // tag with the barcode on one face and the shop/item details on the other.
-// Content must stay inside its own 2in half and never straddle the center
+// Content must stay inside its own 3cm half and never straddle the center
 // -- anything crossing that line gets torn right through the fold crease.
-const LABEL_WIDTH = "4in";
+const LABEL_WIDTH = "6cm";
 const LABEL_HEIGHT = "0.5in";
-const HALF_WIDTH = "2in";
+const HALF_WIDTH = "3cm";
+
+// The barcode is rendered internally at a fixed module width, then scaled
+// via CSS to exactly fill whatever room its half has -- since a 3cm column
+// is extremely tight, this uses every available bit of width instead of a
+// guessed fixed size that could either overflow a long SKU or waste space
+// on a short one.
+const BARCODE_STYLE = { width: "100%", height: "auto", display: "block" };
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (
@@ -28,8 +35,8 @@ function LabelStrip({ shopName, primary, sku, price }) {
         <p className="text-[9px] leading-tight font-semibold text-ink truncate w-full">{primary}</p>
         {price != null && <p className="text-[9px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
-      <div className="flex items-center justify-center overflow-hidden" style={{ width: HALF_WIDTH }}>
-        <BarcodeSvg value={sku} height={30} width={2} fontSize={8} />
+      <div className="flex items-center justify-center overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
+        <BarcodeSvg value={sku} height={30} width={2} fontSize={8} style={BARCODE_STYLE} />
       </div>
     </div>
   );
@@ -91,6 +98,7 @@ function printLabelsInNewWindow(labels, svgEls) {
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      padding: 0 4px;
     }
   `;
   doc.head.appendChild(style);
