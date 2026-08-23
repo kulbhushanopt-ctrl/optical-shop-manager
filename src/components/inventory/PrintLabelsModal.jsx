@@ -27,18 +27,18 @@ const HALF_WIDTH = "3cm";
 // how big we generated them). Stretching vertically doesn't hurt scanning
 // -- a scanner only reads the horizontal pattern of bar/space widths along
 // its scan line, so taller bars are just easier to read, not different data.
-const BARCODE_STYLE = { width: "100%", height: "100%", display: "block" };
+const BARCODE_STYLE = { width: "80%", height: "100%", display: "block" };
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (
     <div className="grid grid-cols-2 overflow-hidden" style={{ width: LABEL_WIDTH, height: LABEL_HEIGHT }}>
       <div className="flex flex-col items-center justify-center text-center px-1 overflow-hidden" style={{ width: HALF_WIDTH }}>
-        {shopName && <p className="text-[9px] leading-tight text-ink truncate w-full">{shopName}</p>}
+        {shopName && <p className="text-[9px] leading-tight font-semibold text-ink truncate w-full">{shopName}</p>}
         <p className="text-[11px] leading-tight font-semibold text-ink truncate w-full">{primary}</p>
         {price != null && <p className="text-[12px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
       <div className="flex items-center justify-center overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
-        <BarcodeSvg value={sku} height={24} width={2} fontSize={16} style={BARCODE_STYLE} />
+        <BarcodeSvg value={sku} height={24} width={2} fontSize={16} fontOptions="bold" style={BARCODE_STYLE} />
       </div>
     </div>
   );
@@ -91,7 +91,7 @@ function printLabelsInNewWindow(labels, svgEls) {
       overflow: hidden;
     }
     .text p { margin: 0; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .shop { font-size: 9px; }
+    .shop { font-size: 9px; font-weight: 600; }
     .primary { font-size: 11px; font-weight: 600; }
     .price { font-size: 12px; font-weight: 600; }
     .barcode-cell {
