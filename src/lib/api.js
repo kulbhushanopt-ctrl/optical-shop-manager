@@ -472,17 +472,34 @@ export async function deleteAppointment(id) {
   if (error) throw error;
 }
 
+// Edge Functions report upstream/timeout failures with a non-2xx status
+// (so the caller can tell them apart from a normal "not configured" reply),
+// but supabase-js treats any non-2xx as an opaque thrown error and never
+// exposes the JSON body it came with. Read that body ourselves so callers
+// still get { error, message } instead of a generic thrown error.
+async function invokeAiFunction(name, body) {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (error) {
+    if (error.context && typeof error.context.json === "function") {
+      try {
+        const errorBody = await error.context.json();
+        if (errorBody && (errorBody.error || errorBody.message)) return errorBody;
+      } catch {
+        // response body wasn't JSON -- fall through and throw the original error
+      }
+    }
+    throw error;
+  }
+  return data;
+}
+
 /* ---------- AI stock-list scan (bulk inventory intake) ---------- */
 // Reads brand/model/quantity/price off a photo of a handwritten or printed
 // stock list via the scan-stock-list Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
 export async function scanStockList(imageDataUrl) {
-  const { data, error } = await supabase.functions.invoke("scan-stock-list", {
-    body: { image: imageDataUrl },
-  });
-  if (error) throw error;
-  return data;
+  return invokeAiFunction("scan-stock-list", { image: imageDataUrl });
 }
 
 /* ---------- AI voice-command inventory entry ---------- */
@@ -491,11 +508,7 @@ export async function scanStockList(imageDataUrl) {
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
 export async function parseInventoryCommand(text) {
-  const { data, error } = await supabase.functions.invoke("parse-inventory-command", {
-    body: { text },
-  });
-  if (error) throw error;
-  return data;
+  return invokeAiFunction("parse-inventory-command", { text });
 }
 
 /* ---------- AI prescription scan ---------- */
@@ -504,11 +517,7 @@ export async function parseInventoryCommand(text) {
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
 export async function scanPrescription(imageDataUrl) {
-  const { data, error } = await supabase.functions.invoke("scan-prescription", {
-    body: { image: imageDataUrl },
-  });
-  if (error) throw error;
-  return data;
+  return invokeAiFunction("scan-prescription", { image: imageDataUrl });
 }
 
 /* ---------- AI contact lens prescription scan ---------- */
@@ -518,11 +527,7 @@ export async function scanPrescription(imageDataUrl) {
 // until a GEMINI_API_KEY secret is set on the Supabase project -- that's a
 // normal, expected response.
 export async function scanContactPrescription(imageDataUrl) {
-  const { data, error } = await supabase.functions.invoke("scan-contact-rx", {
-    body: { image: imageDataUrl },
-  });
-  if (error) throw error;
-  return data;
+  return invokeAiFunction("scan-contact-rx", { image: imageDataUrl });
 }
 
 /* ---------- AI patient intake scan ---------- */
@@ -532,9 +537,5 @@ export async function scanContactPrescription(imageDataUrl) {
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
 export async function scanPatientIntake(imageDataUrl) {
-  const { data, error } = await supabase.functions.invoke("scan-patient-intake", {
-    body: { image: imageDataUrl },
-  });
-  if (error) throw error;
-  return data;
+  return invokeAiFunction("scan-patient-intake", { image: imageDataUrl });
 }
