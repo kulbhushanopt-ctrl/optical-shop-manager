@@ -22,7 +22,7 @@ const ITEM_PLACEHOLDERS = {
 };
 
 const BLANK_ITEM = {
-  type: "frame", category: "", brand: "", model: "", sku: "", price: "", stock: "", low: 3,
+  type: "frame", category: "", brand: "", model: "", sku: "", price: "", purchasePrice: "", stock: "", low: 3,
   power: "", addPower: "", lensIndex: "", coatings: [],
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
@@ -195,15 +195,28 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Purchase price (optional)">
+          <TextInput type="number" value={f.purchasePrice ?? ""} onChange={(e) => set("purchasePrice")(e.target.value)} placeholder="120" />
+        </Field>
         <Field label="Price"><TextInput type="number" value={f.price} onChange={(e) => set("price")(e.target.value)} placeholder="189" /></Field>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         <Field label="Stock"><TextInput type="number" value={f.stock} onChange={(e) => set("stock")(e.target.value)} placeholder="6" /></Field>
         <Field label="Low at"><TextInput type="number" value={f.low} onChange={(e) => set("low")(e.target.value)} placeholder="3" /></Field>
       </div>
       <PrimaryBtn
         full
         disabled={!valid}
-        onClick={() => onSave({ ...f, price: Number(f.price), stock: Number(f.stock) || 1, low: Number(f.low) || 3 })}
+        onClick={() =>
+          onSave({
+            ...f,
+            price: Number(f.price),
+            purchasePrice: f.purchasePrice !== "" ? Number(f.purchasePrice) : null,
+            stock: Number(f.stock) || 1,
+            low: Number(f.low) || 3,
+          })
+        }
       >
         {initial?.id ? "Save changes" : "Add item"}
       </PrimaryBtn>
