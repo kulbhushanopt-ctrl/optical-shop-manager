@@ -25,15 +25,19 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for adding an eyewear inventory item into strict JSON. The speech is Indian English, transcribed by voice recognition and may contain minor errors. Numbers may be spoken as words (e.g. "two thousand", "ten", "a dozen"); prices are in Indian Rupees; words like "pieces", "number", "qty", "in number" indicate the stock quantity. Extract:
+const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for adding eyewear inventory into strict JSON. The speech is Indian English, transcribed by voice recognition and may contain minor errors (e.g. "gents" may be misheard as "giants"). Numbers may be spoken as words (e.g. "two thousand", "twenty", "a dozen"); prices are in Indian Rupees. Extract:
 - type: one of "frame", "sunglasses", "lens", "contact", "accessory" -- infer from context; default to "frame" if it's clearly eyewear stock but the exact type is unclear; use null only if you truly cannot tell it's inventory at all
+- category: for frames, the closest match among these category codes based on gender + material + tier mentioned ("gents metal" -> "GM", "ladies sheet exclusive" -> "LSX", "kids boys" -> "KB", etc): "LM" (Ladies Metal), "LMX" (Ladies Metal Exclusive), "LS" (Ladies Sheet), "LSX" (Ladies Sheet Exclusive), "LF" (Ladies Frameless), "GM" (Gents Metal), "GMX" (Gents Metal Exclusive), "GS" (Gents Sheet), "GSX" (Gents Sheet Exclusive), "GF" (Gents Frameless), "KB" (Kids Boys), "KBX" (Kids Boys Exclusive), "KG" (Kids Girls), "KGX" (Kids Girls Exclusive). Use null if no such gender/material combination is mentioned, or the item isn't a frame.
 - brand: brand name if mentioned, else null
 - model: model name or number if mentioned, else null
-- sku: any color, code, or short descriptor mentioned that isn't the brand or model (e.g. "black", "matte finish"), else null
-- price: the price as a plain number in rupees, converting any spoken number words to digits, else null
-- stock: the quantity to add as a plain number, converting any spoken number words to digits ("a dozen" = 12), else null
+- sku: any color, code, or short descriptor mentioned that isn't the brand, model, or category (e.g. "black", "matte finish"), else null
+- price: the price as a plain number in rupees (per unit), converting any spoken number words to digits, else null
+- quantity: how many SEPARATE, individually distinct items to create -- use this (not stock) when NO specific brand/model was named, e.g. "add twenty frames of gents metal" means twenty different gents metal frames that each need their own listing. Else null.
+- stock: the stock count for ONE item -- use this (not quantity) when a specific brand/model WAS named, e.g. "add ten Ray-Ban Aviators" means ten units of that one model. Else null.
 
-Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"type": string|null, "brand": string|null, "model": string|null, "sku": string|null, "price": number|null, "stock": number|null}`;
+A spoken number is either a quantity of separate items or a stock count of one item, never both -- set only whichever applies, and leave the other null.
+
+Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"type": string|null, "category": string|null, "brand": string|null, "model": string|null, "sku": string|null, "price": number|null, "quantity": number|null, "stock": number|null}`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -83,7 +87,7 @@ Deno.serve(async (req: Request) => {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      parsed = { type: null, brand: null, model: null, sku: null, price: null, stock: null };
+      parsed = { type: null, category: null, brand: null, model: null, sku: null, price: null, quantity: null, stock: null };
     }
 
     return json(parsed);

@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera } from "lucide-react";
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand, deleteLabelReservation } from "../../lib/api";
+import {
+  createInventoryItem,
+  createInventoryItems,
+  updateInventoryItem,
+  deleteInventoryItem,
+  parseInventoryCommand,
+  deleteLabelReservation,
+} from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
-import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel } from "../../lib/rxConstants";
+import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
@@ -11,12 +18,20 @@ import ScanStockListModal from "./ScanStockListModal";
 import TextCommandModal from "./TextCommandModal";
 import PrintLabelsModal from "./PrintLabelsModal";
 
-function voicePrefill(parsed) {
+// A single spoken number is either how many units of ONE named item to
+// stock, or how many SEPARATE un-named items to create -- never both (see
+// the parse-inventory-command prompt). Only the single-item path needs a
+// prefilled form; a category is enough to auto-suggest its SKU even without
+// an explicit one, same as the manual Add Item form's "Use next" button.
+function voicePrefill(parsed, inventory) {
+  const category = parsed.category || "";
+  const sku = parsed.sku || (category ? suggestNextSku(category, inventory) : "");
   return {
     type: ITEM_TYPES.some((t) => t.id === parsed.type) ? parsed.type : "frame",
+    category,
     brand: parsed.brand || "",
     model: parsed.model || "",
-    sku: parsed.sku || "",
+    sku,
     price: parsed.price != null ? String(parsed.price) : "",
     stock: parsed.stock != null ? String(parsed.stock) : "",
   };
@@ -68,7 +83,28 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       if (result?.error) {
         return "Didn't catch that — please try again or add the item manually.";
       }
-      setVoiceDraft(voicePrefill(result));
+      const qty = Math.max(0, Math.min(100, Number(result.quantity) || 0));
+      if (qty > 1) {
+        // "Twenty frames of gents metal" -- no single brand/model was named,
+        // so this creates that many separate, individually-SKU'd rows
+        // instead of opening the single-item form. Brand/model are left
+        // blank for each; the shopkeeper fills those in per frame later
+        // (the same "generate now, detail later" flow as blank labels).
+        const type = ITEM_TYPES.some((t) => t.id === result.type) ? result.type : "frame";
+        const category = result.category || "";
+        const price = result.price != null ? Number(result.price) : 0;
+        const skusSoFar = [];
+        const items = [];
+        for (let i = 0; i < qty; i++) {
+          const sku = suggestNextSku(category || type, inventory, skusSoFar);
+          skusSoFar.push(sku);
+          items.push({ type, category: category || null, brand: "", model: "", sku, price, stock: 1, low: 3 });
+        }
+        const created = await createInventoryItems(branchId, items);
+        setInventory([...created, ...inventory]);
+        return null;
+      }
+      setVoiceDraft(voicePrefill(result, inventory));
       return null;
     } catch (e) {
       return "Didn't catch that — please try again or add the item manually.";
