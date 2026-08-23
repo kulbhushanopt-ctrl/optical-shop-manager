@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { Printer } from "lucide-react";
-import { Modal, Select } from "../shared/ui";
+import { Modal } from "../shared/ui";
 import { currency } from "../../lib/format";
 import BarcodeSvg from "../shared/BarcodeSvg";
 import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
 
 const NON_FRAME_TYPES = ITEM_TYPES.filter((t) => t.id !== "frame");
+const ALL_CATEGORIES = [
+  ...FRAME_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+  ...NON_FRAME_TYPES.map((t) => ({ id: t.id, label: itemTypeLabel(t.id) })),
+];
 
 // Matches a standard thermal label-printer roll (e.g. the small flag-style
 // jewelry/price tags shops already use) instead of a regular sheet of
@@ -66,17 +70,31 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
 
   const selectedItems = eligible.filter((i) => selected.has(i.id));
 
-  const [blankCategory, setBlankCategory] = useState("");
-  const [blankQty, setBlankQty] = useState(10);
+  const [categoryQtys, setCategoryQtys] = useState({});
   const [blankPrice, setBlankPrice] = useState("");
   const [blankLabels, setBlankLabels] = useState([]);
 
+  const setCategoryQty = (id, qty) => setCategoryQtys((prev) => ({ ...prev, [id]: qty }));
+
+  const totalRequestedQty = Object.values(categoryQtys).reduce((sum, q) => sum + (Math.max(0, Number(q) || 0)), 0);
+
+  // Each category has its own SKU prefix (LM, LS, GM, ...), so generating a
+  // batch across several categories at once still gives every category its
+  // own independent, continuing number sequence -- LM and LS never share a
+  // counter just because they were generated together.
   const generateBlankLabels = () => {
-    if (!blankCategory) return;
-    const qty = Math.max(1, Math.min(100, Number(blankQty) || 1));
-    const skus = [];
-    for (let i = 0; i < qty; i++) skus.push(suggestNextSku(blankCategory, inventory, skus));
-    setBlankLabels(skus.map((sku) => ({ sku, category: blankCategory, price: blankPrice ? Number(blankPrice) : null })));
+    const price = blankPrice ? Number(blankPrice) : null;
+    const labels = [];
+    const skusSoFar = [];
+    for (const cat of ALL_CATEGORIES) {
+      const qty = Math.max(0, Math.min(100, Number(categoryQtys[cat.id]) || 0));
+      for (let i = 0; i < qty; i++) {
+        const sku = suggestNextSku(cat.id, inventory, skusSoFar);
+        skusSoFar.push(sku);
+        labels.push({ sku, category: cat.id, price });
+      }
+    }
+    setBlankLabels(labels);
   };
 
   const printCount = mode === "inventory" ? selectedItems.length : blankLabels.length;
@@ -124,33 +142,26 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
       ) : (
         <div className="no-print">
           <p className="text-xs text-slate mb-3">
-            Generate a batch of fresh, not-yet-used SKUs and print their labels now. Stick one on each frame, and later when
-            you add it to inventory, scan the label to fill in the SKU instantly.
+            Enter how many labels you need per category. Each category keeps its own SKU numbering (LM, LS, GM...), so they
+            never overlap. Print now, stick one on each frame, and later when you add it to inventory, scan the label to fill
+            in the SKU instantly.
           </p>
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1">
-              <Select value={blankCategory} onChange={(e) => setBlankCategory(e.target.value)}>
-                <option value="">— Category —</option>
-                <optgroup label="Frame category">
-                  {FRAME_CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id}>{c.label}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Other item type">
-                  {NON_FRAME_TYPES.map((t) => (
-                    <option key={t.id} value={t.id}>{itemTypeLabel(t.id)}</option>
-                  ))}
-                </optgroup>
-              </Select>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={blankQty}
-              onChange={(e) => setBlankQty(e.target.value)}
-              className="w-20 rounded-xl border border-border bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-lens focus:ring-2 focus:ring-lens/15"
-            />
+          <div className="max-h-56 overflow-y-auto rounded-xl border border-border divide-y divide-border mb-3">
+            {ALL_CATEGORIES.map((cat) => (
+              <div key={cat.id} className="flex items-center gap-2 px-3 py-2 text-xs">
+                <span className="flex-1 min-w-0 truncate text-ink">{cat.label}</span>
+                <span className="text-slate font-mono flex-shrink-0">{cat.id}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="0"
+                  value={categoryQtys[cat.id] || ""}
+                  onChange={(e) => setCategoryQty(cat.id, e.target.value)}
+                  className="w-14 rounded-lg border border-border bg-paper px-2 py-1.5 text-xs text-ink outline-none focus:border-lens focus:ring-2 focus:ring-lens/15"
+                />
+              </div>
+            ))}
           </div>
           <input
             type="number"
@@ -163,10 +174,10 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
           <button
             type="button"
             onClick={generateBlankLabels}
-            disabled={!blankCategory}
+            disabled={totalRequestedQty === 0}
             className="w-full py-2.5 rounded-xl text-xs font-semibold text-lens border border-lens disabled:opacity-50 mb-4"
           >
-            Generate {blankQty || 1} label{Number(blankQty) === 1 ? "" : "s"}
+            Generate {totalRequestedQty || ""} label{totalRequestedQty === 1 ? "" : "s"}
           </button>
         </div>
       )}
