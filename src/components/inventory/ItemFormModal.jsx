@@ -27,7 +27,7 @@ const BLANK_ITEM = {
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
 
-export default function ItemFormModal({ title, initial, inventory, branchId, onClose, onSave, onDelete }) {
+export default function ItemFormModal({ title, initial, inventory, branchId, onClose, onSave, onDelete, onFoundExisting }) {
   // `initial` may be a full existing item (editing) or a partial AI-parsed
   // prefill (voice add) -- merge over blank defaults either way so missing
   // fields (e.g. `low`, `coatings`) don't end up undefined.
@@ -98,8 +98,19 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
         <Suspense fallback={null}>
           <BarcodeScanner
             onDetect={async (code) => {
-              setF((prev) => ({ ...prev, sku: code }));
               setShowScanner(false);
+              // Scanning a code that already belongs to an existing item
+              // (e.g. one created by a previous scan-and-fill-in-later, or
+              // a bulk voice-add) should open THAT item instead of
+              // prepping a brand-new one with a duplicate SKU.
+              if (!initial?.id && onFoundExisting) {
+                const existing = (inventory || []).find((i) => i.sku === code);
+                if (existing) {
+                  onFoundExisting(existing);
+                  return;
+                }
+              }
+              setF((prev) => ({ ...prev, sku: code }));
               // If this code matches a printed "blank label" batch, recover
               // the category/price that were reserved for it too, instead
               // of only filling the SKU.
