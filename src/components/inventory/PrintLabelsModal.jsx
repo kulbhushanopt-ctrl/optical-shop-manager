@@ -11,24 +11,26 @@ const ALL_CATEGORIES = [
   ...NON_FRAME_TYPES.map((t) => ({ id: t.id, label: itemTypeLabel(t.id) })),
 ];
 
-// Matches a standard thermal label-printer roll (e.g. the small flag-style
-// jewelry/price tags shops already use) instead of a regular sheet of
-// paper -- each label becomes its own printed "page" at this exact size.
+// This is a fold-in-half tag: the full printed strip is 4in long, but the
+// shop physically folds it at the 2in center mark so it ends up as a 2in
+// tag with the barcode on one face and the shop/item details on the other.
+// Content must stay inside its own 2in half and never straddle the center
+// -- anything crossing that line gets torn right through the fold crease.
 const LABEL_WIDTH = "4in";
 const LABEL_HEIGHT = "0.5in";
+const HALF_WIDTH = "2in";
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (
-    <div
-      className="flex items-center justify-center gap-4 px-2 overflow-hidden"
-      style={{ width: LABEL_WIDTH, height: LABEL_HEIGHT }}
-    >
-      <div className="text-left max-w-[1.2in]">
-        {shopName && <p className="text-[7px] leading-tight text-ink truncate">{shopName}</p>}
-        <p className="text-[9px] leading-tight font-semibold text-ink truncate">{primary}</p>
+    <div className="grid grid-cols-2 overflow-hidden" style={{ width: LABEL_WIDTH, height: LABEL_HEIGHT }}>
+      <div className="flex flex-col items-center justify-center text-center px-1 overflow-hidden" style={{ width: HALF_WIDTH }}>
+        {shopName && <p className="text-[7px] leading-tight text-ink truncate w-full">{shopName}</p>}
+        <p className="text-[9px] leading-tight font-semibold text-ink truncate w-full">{primary}</p>
         {price != null && <p className="text-[9px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
-      <BarcodeSvg value={sku} height={30} width={2} fontSize={8} />
+      <div className="flex items-center justify-center overflow-hidden" style={{ width: HALF_WIDTH }}>
+        <BarcodeSvg value={sku} height={30} width={2} fontSize={8} />
+      </div>
     </div>
   );
 }
@@ -62,21 +64,34 @@ function printLabelsInNewWindow(labels, svgEls) {
     .label {
       width: ${LABEL_WIDTH};
       height: ${LABEL_HEIGHT};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 0 8px;
+      display: grid;
+      grid-template-columns: ${HALF_WIDTH} ${HALF_WIDTH};
       overflow: hidden;
       page-break-after: always;
       break-after: page;
     }
     .label:last-child { page-break-after: auto; break-after: auto; }
-    .text { text-align: left; max-width: 1.2in; }
-    .text p { margin: 0; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .text {
+      width: ${HALF_WIDTH};
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0 4px;
+      overflow: hidden;
+    }
+    .text p { margin: 0; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .shop { font-size: 7px; }
     .primary { font-size: 9px; font-weight: 600; }
     .price { font-size: 9px; font-weight: 600; }
+    .barcode-cell {
+      width: ${HALF_WIDTH};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
   `;
   doc.head.appendChild(style);
 
@@ -104,7 +119,10 @@ function printLabelsInNewWindow(labels, svgEls) {
     }
     div.appendChild(textDiv);
 
-    if (svgEls[i]) div.appendChild(svgEls[i].cloneNode(true));
+    const barcodeCell = doc.createElement("div");
+    barcodeCell.className = "barcode-cell";
+    if (svgEls[i]) barcodeCell.appendChild(svgEls[i].cloneNode(true));
+    div.appendChild(barcodeCell);
 
     doc.body.appendChild(div);
   });
