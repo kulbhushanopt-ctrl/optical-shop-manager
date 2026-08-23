@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Printer } from "lucide-react";
 import { Modal } from "../shared/ui";
 import { currency } from "../../lib/format";
@@ -17,28 +17,11 @@ const ALL_CATEGORIES = [
 const LABEL_WIDTH = "4in";
 const LABEL_HEIGHT = "0.5in";
 
-function printLabelPage() {
-  const style = document.createElement("style");
-  style.textContent = `@page { size: ${LABEL_WIDTH} ${LABEL_HEIGHT}; margin: 0; }`;
-  document.head.appendChild(style);
-  const cleanup = () => {
-    style.remove();
-    window.removeEventListener("afterprint", cleanup);
-  };
-  window.addEventListener("afterprint", cleanup);
-  window.print();
-}
-
-function LabelStrip({ shopName, primary, sku, price, isLast }) {
+function LabelStrip({ shopName, primary, sku, price }) {
   return (
     <div
       className="flex items-center justify-center gap-4 px-2 overflow-hidden"
-      style={{
-        width: LABEL_WIDTH,
-        height: LABEL_HEIGHT,
-        breakAfter: isLast ? "auto" : "page",
-        pageBreakAfter: isLast ? "auto" : "always",
-      }}
+      style={{ width: LABEL_WIDTH, height: LABEL_HEIGHT }}
     >
       <div className="text-left max-w-[1.2in]">
         {shopName && <p className="text-[7px] leading-tight text-ink truncate">{shopName}</p>}
@@ -50,8 +33,91 @@ function LabelStrip({ shopName, primary, sku, price, isLast }) {
   );
 }
 
+// Printing straight from the on-page DOM (via window.print() + a visibility
+// hack) turned out to be fragile at this label's real size: the modal
+// wrapping the preview adds its own margin/border/positioning context, and
+// with a page only 0.5in tall even a few stray pixels of that leaking in is
+// enough to push content past the page boundary and confuse the browser's
+// pagination -- which is what caused the same label to print over and over
+// instead of advancing to the next one. Printing in a completely separate,
+// bare window sidesteps all of that: nothing exists in that document except
+// the labels themselves, so there's no ambient CSS left to interfere.
+function printLabelsInNewWindow(labels, svgEls) {
+  const printWindow = window.open("", "_blank", "width=420,height=200");
+  if (!printWindow) {
+    alert("Please allow pop-ups for this site to print labels.");
+    return;
+  }
+  const doc = printWindow.document;
+  doc.open();
+  doc.write("<!DOCTYPE html><html><head><title>Print labels</title></head><body></body></html>");
+  doc.close();
+
+  const style = doc.createElement("style");
+  style.textContent = `
+    @page { size: ${LABEL_WIDTH} ${LABEL_HEIGHT}; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; }
+    .label {
+      width: ${LABEL_WIDTH};
+      height: ${LABEL_HEIGHT};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 8px;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+    }
+    .label:last-child { page-break-after: auto; break-after: auto; }
+    .text { text-align: left; max-width: 1.2in; }
+    .text p { margin: 0; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .shop { font-size: 7px; }
+    .primary { font-size: 9px; font-weight: 600; }
+    .price { font-size: 9px; font-weight: 600; }
+  `;
+  doc.head.appendChild(style);
+
+  labels.forEach((label, i) => {
+    const div = doc.createElement("div");
+    div.className = "label";
+
+    const textDiv = doc.createElement("div");
+    textDiv.className = "text";
+    if (label.shopName) {
+      const p = doc.createElement("p");
+      p.className = "shop";
+      p.textContent = label.shopName;
+      textDiv.appendChild(p);
+    }
+    const primaryP = doc.createElement("p");
+    primaryP.className = "primary";
+    primaryP.textContent = label.primary;
+    textDiv.appendChild(primaryP);
+    if (label.priceText) {
+      const priceP = doc.createElement("p");
+      priceP.className = "price";
+      priceP.textContent = label.priceText;
+      textDiv.appendChild(priceP);
+    }
+    div.appendChild(textDiv);
+
+    if (svgEls[i]) div.appendChild(svgEls[i].cloneNode(true));
+
+    doc.body.appendChild(div);
+  });
+
+  printWindow.focus();
+  // The popup needs a tick to finish laying out the freshly-inserted DOM
+  // before print() captures it, otherwise some browsers print a blank page.
+  setTimeout(() => printWindow.print(), 150);
+}
+
 export default function PrintLabelsModal({ inventory, shopName, onClose }) {
   const [mode, setMode] = useState("inventory");
+  const previewRef = useRef(null);
 
   const eligible = inventory.filter((i) => i.sku && i.sku.trim());
   const [selected, setSelected] = useState(() => new Set());
@@ -99,9 +165,29 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
 
   const printCount = mode === "inventory" ? selectedItems.length : blankLabels.length;
 
+  const handlePrint = () => {
+    const svgEls = previewRef.current ? Array.from(previewRef.current.querySelectorAll("svg")) : [];
+    const labels =
+      mode === "inventory"
+        ? selectedItems.map((item) => ({
+            shopName,
+            primary: `${item.brand} ${item.model}`,
+            priceText: item.price != null ? currency(item.price) : "",
+          }))
+        : blankLabels.map((label) => ({
+            shopName,
+            primary:
+              frameCategoryLabel(label.category) !== label.category
+                ? frameCategoryLabel(label.category)
+                : itemTypeLabel(label.category),
+            priceText: label.price != null ? currency(label.price) : "",
+          }));
+    printLabelsInNewWindow(labels, svgEls);
+  };
+
   return (
     <Modal title="Print barcode labels" onClose={onClose} wide>
-      <div className="no-print flex gap-2 mb-4 rounded-xl bg-cream p-1">
+      <div className="flex gap-2 mb-4 rounded-xl bg-cream p-1">
         <button
           type="button"
           onClick={() => setMode("inventory")}
@@ -122,7 +208,7 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
         eligible.length === 0 ? (
           <p className="text-xs text-slate">No items with a SKU yet — add a SKU to an item first so it has something to encode.</p>
         ) : (
-          <div className="no-print">
+          <div>
             <button type="button" onClick={toggleAll} className="text-xs font-medium text-lens mb-2">
               {selected.size === eligible.length ? "Deselect all" : "Select all"}
             </button>
@@ -140,7 +226,7 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
           </div>
         )
       ) : (
-        <div className="no-print">
+        <div>
           <p className="text-xs text-slate mb-3">
             Enter how many labels you need per category. Each category keeps its own SKU numbering (LM, LS, GM...), so they
             never overlap. Print now, stick one on each frame, and later when you add it to inventory, scan the label to fill
@@ -185,39 +271,32 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
       {(mode === "inventory" ? selectedItems.length > 0 : blankLabels.length > 0) && (
         <button
           type="button"
-          onClick={printLabelPage}
-          className="no-print w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-1.5 mb-1 bg-lens"
+          onClick={handlePrint}
+          className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-1.5 mb-1 bg-lens"
         >
           <Printer size={15} /> Print {printCount} label{printCount === 1 ? "" : "s"}
         </button>
       )}
 
       {mode === "inventory" && selectedItems.length > 0 && (
-        <div id="print-area" className="flex flex-col gap-1 mt-4 overflow-x-auto">
-          {selectedItems.map((item, i) => (
+        <div ref={previewRef} className="flex flex-col gap-1 mt-4 overflow-x-auto">
+          {selectedItems.map((item) => (
             <div key={item.id} className="border border-border rounded">
-              <LabelStrip
-                shopName={shopName}
-                primary={`${item.brand} ${item.model}`}
-                sku={item.sku}
-                price={item.price}
-                isLast={i === selectedItems.length - 1}
-              />
+              <LabelStrip shopName={shopName} primary={`${item.brand} ${item.model}`} sku={item.sku} price={item.price} />
             </div>
           ))}
         </div>
       )}
 
       {mode === "blank" && blankLabels.length > 0 && (
-        <div id="print-area" className="flex flex-col gap-1 mt-4 overflow-x-auto">
-          {blankLabels.map((label, i) => (
+        <div ref={previewRef} className="flex flex-col gap-1 mt-4 overflow-x-auto">
+          {blankLabels.map((label) => (
             <div key={label.sku} className="border border-border rounded">
               <LabelStrip
                 shopName={shopName}
                 primary={frameCategoryLabel(label.category) !== label.category ? frameCategoryLabel(label.category) : itemTypeLabel(label.category)}
                 sku={label.sku}
                 price={label.price}
-                isLast={i === blankLabels.length - 1}
               />
             </div>
           ))}
