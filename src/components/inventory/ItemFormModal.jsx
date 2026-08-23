@@ -38,11 +38,18 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
     const coatings = f.coatings || [];
     setF({ ...f, coatings: coatings.includes(c) ? coatings.filter((x) => x !== c) : [...coatings, c] });
   };
-  const valid = (f.brand || "").trim() && f.price !== "" && f.stock !== "";
+  // Brand/model are often unknown yet when an item is created up front (a
+  // bulk voice-add, or a scanned blank label) -- SKU and price are what
+  // actually make a row usable, and category is what makes a frame's SKU
+  // meaningful, so those are the only things required.
+  const valid = (f.type !== "frame" || (f.category || "").trim()) && f.price !== "" && (f.sku || "").trim();
 
   return (
     <Modal title={title} onClose={onClose}>
-      <p className="text-[11px] text-slate -mt-1 mb-3">Only Brand, Price, and Stock are required — everything else is optional and can be filled in later.</p>
+      <p className="text-[11px] text-slate -mt-1 mb-3">
+        Only {f.type === "frame" ? "Category, Price, and SKU are" : "Price and SKU are"} required — everything else is
+        optional and can be filled in later.
+      </p>
       <Field label="Type">
         <Select value={f.type} onChange={(e) => set("type")(e.target.value)}>
           {ITEM_TYPES.map((t) => (
@@ -185,7 +192,7 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
       <PrimaryBtn
         full
         disabled={!valid}
-        onClick={() => onSave({ ...f, price: Number(f.price), stock: Number(f.stock), low: Number(f.low) || 3 })}
+        onClick={() => onSave({ ...f, price: Number(f.price), stock: Number(f.stock) || 1, low: Number(f.low) || 3 })}
       >
         {initial?.id ? "Save changes" : "Add item"}
       </PrimaryBtn>
