@@ -34,7 +34,7 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI form scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice(`Couldn't read that photo — please enter the details manually. (${result.message || result.error})`);
+        setScanNotice("Couldn't read that photo — please enter the details manually.");
       } else {
         let filledSomething = false;
         if (!name.trim() && result.name) {

@@ -51,7 +51,7 @@ export default function AddRxModal({ onClose, onSave, initial }) {
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI prescription scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice(`Couldn't read that photo — please enter the values manually. (${result.message || result.error})`);
+        setScanNotice("Couldn't read that photo — please enter the values manually.");
       } else {
         const anyFound = RX_SCAN_FIELDS.some((k) => result?.[k]);
         setF((prev) => {

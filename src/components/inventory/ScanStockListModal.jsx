@@ -39,7 +39,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI stock-list scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice(`Couldn't read that photo — please try a clearer shot. (${result.message || result.error})`);
+        setScanNotice("Couldn't read that photo — please try a clearer shot.");
       } else {
         const scanned = (result?.rows || []).map(rowFromScan);
         if (scanned.length === 0) {
