@@ -7,7 +7,7 @@ import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, suggestNextSku } from "../
 
 const NON_FRAME_TYPES = ITEM_TYPES.filter((t) => t.id !== "frame");
 
-export default function PrintLabelsModal({ inventory, onClose }) {
+export default function PrintLabelsModal({ inventory, shopName, onClose }) {
   const [mode, setMode] = useState("inventory");
 
   const eligible = inventory.filter((i) => i.sku && i.sku.trim());
@@ -29,6 +29,7 @@ export default function PrintLabelsModal({ inventory, onClose }) {
 
   const [blankCategory, setBlankCategory] = useState("");
   const [blankQty, setBlankQty] = useState(10);
+  const [blankPrice, setBlankPrice] = useState("");
   const [blankLabels, setBlankLabels] = useState([]);
 
   const generateBlankLabels = () => {
@@ -36,7 +37,7 @@ export default function PrintLabelsModal({ inventory, onClose }) {
     const qty = Math.max(1, Math.min(100, Number(blankQty) || 1));
     const skus = [];
     for (let i = 0; i < qty; i++) skus.push(suggestNextSku(blankCategory, inventory, skus));
-    setBlankLabels(skus.map((sku) => ({ sku })));
+    setBlankLabels(skus.map((sku) => ({ sku, price: blankPrice ? Number(blankPrice) : null })));
   };
 
   const printCount = mode === "inventory" ? selectedItems.length : blankLabels.length;
@@ -112,6 +113,14 @@ export default function PrintLabelsModal({ inventory, onClose }) {
               className="w-20 rounded-xl border border-border bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-lens focus:ring-2 focus:ring-lens/15"
             />
           </div>
+          <input
+            type="number"
+            min={0}
+            value={blankPrice}
+            onChange={(e) => setBlankPrice(e.target.value)}
+            placeholder="Price to print on label (optional)"
+            className="w-full rounded-xl border border-border bg-paper px-3 py-2.5 text-sm text-ink outline-none focus:border-lens focus:ring-2 focus:ring-lens/15 mb-3"
+          />
           <button
             type="button"
             onClick={generateBlankLabels}
@@ -137,11 +146,12 @@ export default function PrintLabelsModal({ inventory, onClose }) {
         <div id="print-area" className="grid grid-cols-2 gap-2 mt-4">
           {selectedItems.map((item) => (
             <div key={item.id} className="border border-border rounded-lg p-2 flex flex-col items-center text-center">
+              {shopName && <p className="text-[8px] font-semibold text-slate truncate w-full">{shopName}</p>}
               <p className="text-[10px] font-semibold text-ink truncate w-full">
                 {item.brand} {item.model}
               </p>
               <BarcodeSvg value={item.sku} height={32} width={1.3} fontSize={9} />
-              <p className="text-[10px] text-slate">{currency(item.price)}</p>
+              <p className="text-[10px] font-semibold text-ink">{currency(item.price)}</p>
             </div>
           ))}
         </div>
@@ -151,7 +161,9 @@ export default function PrintLabelsModal({ inventory, onClose }) {
         <div id="print-area" className="grid grid-cols-2 gap-2 mt-4">
           {blankLabels.map((label) => (
             <div key={label.sku} className="border border-border rounded-lg p-2 flex flex-col items-center text-center">
+              {shopName && <p className="text-[8px] font-semibold text-slate truncate w-full">{shopName}</p>}
               <BarcodeSvg value={label.sku} height={32} width={1.3} fontSize={9} />
+              {label.price != null && <p className="text-[10px] font-semibold text-ink">{currency(label.price)}</p>}
             </div>
           ))}
         </div>

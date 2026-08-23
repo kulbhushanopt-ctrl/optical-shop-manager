@@ -29,7 +29,7 @@ function ItemIcon({ type }) {
   return <Eye size={16} className="text-lens" />;
 }
 
-export default function InventoryTab({ inventory, setInventory, branchId, isOwner }) {
+export default function InventoryTab({ inventory, setInventory, branchId, isOwner, shopName }) {
   const [filter, setFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -243,7 +243,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
           }}
         />
       )}
-      {isOwner && showLabels && <PrintLabelsModal inventory={inventory} onClose={() => setShowLabels(false)} />}
+      {isOwner && showLabels && (
+        <PrintLabelsModal inventory={inventory} shopName={shopName} onClose={() => setShowLabels(false)} />
+      )}
     </div>
   );
 }

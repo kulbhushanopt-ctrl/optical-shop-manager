@@ -228,7 +228,15 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 onPrefillConsumed={() => setNewInvoicePatientId(null)}
               />
             )}
-            {tab === "inventory" && <InventoryTab inventory={inventory} setInventory={setInventory} branchId={branch.id} isOwner={isOwner} />}
+            {tab === "inventory" && (
+              <InventoryTab
+                inventory={inventory}
+                setInventory={setInventory}
+                branchId={branch.id}
+                isOwner={isOwner}
+                shopName={branch.name}
+              />
+            )}
           </div>
           <p className="text-center text-[10px] text-slate py-1.5 bg-card border-t border-border">© {new Date().getFullYear()} Kulbhushan Sachdeva</p>
           <div className="md:hidden">
