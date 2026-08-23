@@ -16,7 +16,7 @@ const corsHeaders = {
 // under us the same way. GEMINI_TIMEOUT_MS caps how long a single call is
 // allowed to hang before we give up and let the user retry, instead of the
 // request sitting for up to 150s.
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 const GEMINI_TIMEOUT_MS = 25000;
 
 function json(body: unknown, status = 200) {
