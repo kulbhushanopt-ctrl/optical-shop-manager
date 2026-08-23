@@ -5,18 +5,17 @@ import CameraCapture from "../shared/CameraCapture";
 import { scanStockList, createInventoryItems } from "../../lib/api";
 import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku } from "../../lib/rxConstants";
 
-// A scanned row's model/code is used as the starting SKU -- this shop's
-// handwritten lists don't distinguish the two -- but stays independently
-// editable so a category-based SKU (see suggestNextSku below) can replace
-// it without losing the original supplier code from `model`. When a batch
-// category/price was set up front, they're applied here so every row
-// arrives ready to save instead of needing that filled in per row.
+// The AI's model-number reading turned out unreliable enough (easy to
+// misread off a tiny engraving) that it's better left blank than wrong --
+// only brand is trusted from the scan; model stays empty for the shopkeeper
+// to type in by hand if/when they want it. When a batch category/price was
+// set up front, they're applied here so every row arrives ready to save.
 function rowFromScan(r, batchCategory, batchPrice) {
   return {
     localId: uid(),
     brand: r.brand || "",
-    model: r.model || "",
-    sku: r.model || "",
+    model: "",
+    sku: "",
     category: batchCategory || "",
     type: "frame",
     quantity: r.quantity != null ? String(r.quantity) : "1",
@@ -95,7 +94,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
     updateRow(row.localId, { sku: suggestNextSku(row.category, inventory, siblingSkus) });
   };
 
-  const validRows = (rows || []).filter((r) => r.brand.trim() && r.model.trim());
+  const validRows = (rows || []).filter((r) => r.brand.trim());
 
   const saveAll = async () => {
     setSaving(true);
@@ -224,8 +223,8 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
                     <Wand2 size={11} /> Generate SKU from category
                   </button>
                 )}
-                {!r.brand.trim() || !r.model.trim() ? (
-                  <p className="text-[10px] text-warn mt-1.5">Brand and model are required to add this row.</p>
+                {!r.brand.trim() ? (
+                  <p className="text-[10px] text-warn mt-1.5">Brand is required to add this row.</p>
                 ) : !r.price.trim() ? (
                   <p className="text-[10px] text-slate mt-1.5">No price read — will be added at ₹0, edit later.</p>
                 ) : null}
