@@ -53,7 +53,16 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI stock-list scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice(`Couldn't read that photo — please try a clearer shot. (${result.message || result.error})`);
+        // The free Gemini tier caps requests per day -- this shows up
+        // identically across every AI feature, so it's worth a distinct,
+        // actionable message instead of a generic "try a clearer shot"
+        // that would just send someone down the wrong troubleshooting path.
+        const quotaHit = /quota|resource_exhausted|429/i.test(result.message || "");
+        setScanNotice(
+          quotaHit
+            ? "AI usage limit reached for today — please try again later, or add these items manually for now."
+            : "Couldn't read that photo — please try a clearer shot."
+        );
       } else {
         // Each row gets its own SKU under the shared category so a batch of
         // ten frames doesn't all land on the same "LM-001" number.
@@ -73,7 +82,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         }
       }
     } catch (err) {
-      setScanNotice(`Couldn't read that photo — please try a clearer shot. (${err?.message || err})`);
+      setScanNotice("Couldn't read that photo — please try a clearer shot.");
     }
     setScanning(false);
   };
