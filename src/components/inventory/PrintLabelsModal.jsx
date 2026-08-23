@@ -17,7 +17,7 @@ const ALL_CATEGORIES = [
 // Content must stay inside its own 3cm half and never straddle the center
 // -- anything crossing that line gets torn right through the fold crease.
 const LABEL_WIDTH = "6cm";
-const LABEL_HEIGHT = "0.5in";
+const LABEL_HEIGHT = "1.2cm";
 const HALF_WIDTH = "3cm";
 
 // The barcode is rendered internally at a fixed module width, then scaled
