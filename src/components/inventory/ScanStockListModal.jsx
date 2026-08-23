@@ -53,7 +53,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI stock-list scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice("Couldn't read that photo — please try a clearer shot.");
+        setScanNotice(`Couldn't read that photo — please try a clearer shot. (${result.message || result.error})`);
       } else {
         // Each row gets its own SKU under the shared category so a batch of
         // ten frames doesn't all land on the same "LM-001" number.
@@ -73,7 +73,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         }
       }
     } catch (err) {
-      setScanNotice("Couldn't read that photo — please try a clearer shot.");
+      setScanNotice(`Couldn't read that photo — please try a clearer shot. (${err?.message || err})`);
     }
     setScanning(false);
   };
