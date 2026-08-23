@@ -127,8 +127,32 @@ export default function OpticalShopApp() {
   );
 }
 
+// On some installed (home-screen) Android PWAs, opening a native file
+// picker -- Excel import, the shop logo, a camera gallery-fallback -- makes
+// the OS reclaim the backgrounded app and Chrome reloads it fresh once the
+// picker closes, wiping all in-memory state including which tab was open.
+// That can't be prevented from here, but landing back on whatever tab you
+// were actually using (instead of always Home) makes the reload far less
+// disorienting -- so the active tab is mirrored to sessionStorage and
+// restored on mount.
+const ACTIVE_TAB_KEY = "optishop_active_tab";
+
 function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, onBranchUpdated }) {
-  const [tab, setTab] = useState("home");
+  const [tab, setTabState] = useState(() => {
+    try {
+      return sessionStorage.getItem(ACTIVE_TAB_KEY) || "home";
+    } catch {
+      return "home";
+    }
+  });
+  const setTab = (t) => {
+    setTabState(t);
+    try {
+      sessionStorage.setItem(ACTIVE_TAB_KEY, t);
+    } catch {
+      /* sessionStorage unavailable -- tab just won't survive a reload */
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [patients, setPatients] = useState([]);
   const [inventory, setInventory] = useState([]);
