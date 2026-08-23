@@ -5,6 +5,7 @@ import { compressImage } from "../../lib/image";
 import { Modal, Field, TextInput, TextArea, PrimaryBtn, SecondaryBtn } from "../shared/ui";
 import StaffModal from "./StaffModal";
 import AiKeyModal from "./AiKeyModal";
+import { notifyFilePickerOpening } from "../../hooks/useModalBackClose";
 
 export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId, onBranchUpdated }) {
   const [name, setName] = useState(shopInfo.name || "");
@@ -69,7 +70,11 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
       <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoPick} />
       <div className="flex flex-col items-center mb-4">
         <button
-          onClick={() => isOwner && logoInputRef.current?.click()}
+          onClick={() => {
+            if (!isOwner) return;
+            notifyFilePickerOpening();
+            logoInputRef.current?.click();
+          }}
           className="relative"
           disabled={!isOwner || logoLoading}
           type="button"
@@ -88,7 +93,14 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
         </button>
         {isOwner && (
           <div className="flex items-center gap-3 mt-2">
-            <button type="button" onClick={() => logoInputRef.current?.click()} className="text-[11px] font-medium text-lens">
+            <button
+              type="button"
+              onClick={() => {
+                notifyFilePickerOpening();
+                logoInputRef.current?.click();
+              }}
+              className="text-[11px] font-medium text-lens"
+            >
               {logo ? "Change logo" : "Add logo"}
             </button>
             {logo && (

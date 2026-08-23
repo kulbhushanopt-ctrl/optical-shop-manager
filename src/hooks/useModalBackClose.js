@@ -21,10 +21,34 @@ const stack = [];
 let listenerAttached = false;
 let pendingSelfPops = 0;
 
+// Launching a native file/photo picker from a modal (Excel import, the shop
+// logo upload, a camera view's gallery-fallback button) makes some Android
+// browsers fire a spurious popstate on the underlying page once the picker
+// activity closes -- indistinguishable from a real back-button press, which
+// was silently closing the modal the instant a file got picked, before the
+// file could even be read. notifyFilePickerOpening() arms a one-shot flag
+// that swallows exactly that next popstate; the timeout resets it if no
+// popstate ever came, so it can't accidentally eat a later real back press.
+let suppressNextPopstate = false;
+let suppressTimer = null;
+
+export function notifyFilePickerOpening() {
+  suppressNextPopstate = true;
+  clearTimeout(suppressTimer);
+  suppressTimer = setTimeout(() => {
+    suppressNextPopstate = false;
+  }, 3000);
+}
+
 function ensureListener() {
   if (listenerAttached) return;
   listenerAttached = true;
   window.addEventListener("popstate", () => {
+    if (suppressNextPopstate) {
+      suppressNextPopstate = false;
+      clearTimeout(suppressTimer);
+      return;
+    }
     if (pendingSelfPops > 0) {
       pendingSelfPops--;
       return;

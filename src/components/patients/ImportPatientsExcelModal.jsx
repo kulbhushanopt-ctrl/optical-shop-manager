@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import { Upload, Download, CheckCircle2, AlertTriangle, Loader2, Eye } from "lucide-react";
 import { Modal, PrimaryBtn } from "../shared/ui";
+import { notifyFilePickerOpening } from "../../hooks/useModalBackClose";
 import { createPatients } from "../../lib/api";
 import { uid } from "../../lib/rxConstants";
 import { todayISO } from "../../lib/format";
@@ -187,7 +188,14 @@ export default function ImportPatientsExcelModal({ branchId, onClose, onImported
           <label className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
             {parsing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
             {parsing ? "Reading file…" : "Choose Excel or CSV file"}
-            <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} disabled={parsing} />
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onClick={notifyFilePickerOpening}
+              onChange={handleFile}
+              disabled={parsing}
+            />
           </label>
           {error && <p className="text-[11px] text-warn mt-2">{error}</p>}
         </>

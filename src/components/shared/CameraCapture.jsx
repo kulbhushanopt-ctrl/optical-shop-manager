@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { X, RotateCcw, Image as ImageIcon } from "lucide-react";
 import { compressImage } from "../../lib/image";
-import { useModalBackClose } from "../../hooks/useModalBackClose";
+import { useModalBackClose, notifyFilePickerOpening } from "../../hooks/useModalBackClose";
 
 // Full-screen in-page camera using getUserMedia, instead of handing off to
 // the device's native camera app. Launching a native app from a file input
@@ -103,7 +103,10 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
       <div className="p-5 flex items-center justify-center gap-4 flex-shrink-0">
         {error ? (
           <button
-            onClick={() => galleryInputRef.current?.click()}
+            onClick={() => {
+              notifyFilePickerOpening();
+              galleryInputRef.current?.click();
+            }}
             className="px-5 py-3 rounded-full bg-white/10 text-white text-sm font-semibold flex items-center gap-1.5"
           >
             <ImageIcon size={15} /> Choose from gallery
@@ -120,7 +123,10 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
         ) : (
           <>
             <button
-              onClick={() => galleryInputRef.current?.click()}
+              onClick={() => {
+                notifyFilePickerOpening();
+                galleryInputRef.current?.click();
+              }}
               className="w-11 h-11 rounded-full bg-white/10 text-white flex items-center justify-center flex-shrink-0"
               aria-label="Choose from gallery"
             >
