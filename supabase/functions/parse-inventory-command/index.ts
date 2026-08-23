@@ -9,6 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Pinned to a specific, versioned model instead of the "-latest" alias --
+// Google can silently repoint an alias to a different (and sometimes
+// currently-overloaded) model, which is what turned every scan/parse
+// function's calls into multi-minute hangs. A pinned version can't move
+// out from under us the same way. GEMINI_TIMEOUT_MS caps how long a single
+// call is allowed to hang before we give up and let the user retry.
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_TIMEOUT_MS = 25000;
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -46,9 +55,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
@@ -56,8 +67,10 @@ Deno.serve(async (req: Request) => {
           contents: [{ parts: [{ text: `${PROMPT}\n\nInstruction: "${text}"` }] }],
           generationConfig: { temperature: 0, responseMimeType: "application/json" },
         }),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const errText = await res.text();
@@ -75,6 +88,11 @@ Deno.serve(async (req: Request) => {
 
     return json(parsed);
   } catch (e) {
-    return json({ error: "upstream_error", message: String(e) }, 502);
+    clearTimeout(timeoutId);
+    const timedOut = e instanceof Error && e.name === "AbortError";
+    return json(
+      { error: "upstream_error", message: timedOut ? "The AI took too long to respond — please try again." : String(e) },
+      502
+    );
   }
 });
