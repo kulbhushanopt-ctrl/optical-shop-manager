@@ -3,9 +3,48 @@ import { Printer } from "lucide-react";
 import { Modal, Select } from "../shared/ui";
 import { currency } from "../../lib/format";
 import BarcodeSvg from "../shared/BarcodeSvg";
-import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, suggestNextSku } from "../../lib/rxConstants";
+import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
 
 const NON_FRAME_TYPES = ITEM_TYPES.filter((t) => t.id !== "frame");
+
+// Matches a standard thermal label-printer roll (e.g. the small flag-style
+// jewelry/price tags shops already use) instead of a regular sheet of
+// paper -- each label becomes its own printed "page" at this exact size.
+const LABEL_WIDTH = "4in";
+const LABEL_HEIGHT = "0.5in";
+
+function printLabelPage() {
+  const style = document.createElement("style");
+  style.textContent = `@page { size: ${LABEL_WIDTH} ${LABEL_HEIGHT}; margin: 0; }`;
+  document.head.appendChild(style);
+  const cleanup = () => {
+    style.remove();
+    window.removeEventListener("afterprint", cleanup);
+  };
+  window.addEventListener("afterprint", cleanup);
+  window.print();
+}
+
+function LabelStrip({ shopName, primary, sku, price, isLast }) {
+  return (
+    <div
+      className="flex items-center gap-2 px-2 overflow-hidden"
+      style={{
+        width: LABEL_WIDTH,
+        height: LABEL_HEIGHT,
+        breakAfter: isLast ? "auto" : "page",
+        pageBreakAfter: isLast ? "auto" : "always",
+      }}
+    >
+      <div className="flex-1 min-w-0">
+        {shopName && <p className="text-[7px] leading-tight text-ink truncate">{shopName}</p>}
+        <p className="text-[9px] leading-tight font-semibold text-ink truncate">{primary}</p>
+        {price != null && <p className="text-[9px] leading-tight font-semibold text-ink">{currency(price)}</p>}
+      </div>
+      <BarcodeSvg value={sku} height={24} width={1} fontSize={7} />
+    </div>
+  );
+}
 
 export default function PrintLabelsModal({ inventory, shopName, onClose }) {
   const [mode, setMode] = useState("inventory");
@@ -37,7 +76,7 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
     const qty = Math.max(1, Math.min(100, Number(blankQty) || 1));
     const skus = [];
     for (let i = 0; i < qty; i++) skus.push(suggestNextSku(blankCategory, inventory, skus));
-    setBlankLabels(skus.map((sku) => ({ sku, price: blankPrice ? Number(blankPrice) : null })));
+    setBlankLabels(skus.map((sku) => ({ sku, category: blankCategory, price: blankPrice ? Number(blankPrice) : null })));
   };
 
   const printCount = mode === "inventory" ? selectedItems.length : blankLabels.length;
@@ -135,7 +174,7 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
       {(mode === "inventory" ? selectedItems.length > 0 : blankLabels.length > 0) && (
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={printLabelPage}
           className="no-print w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-1.5 mb-1 bg-lens"
         >
           <Printer size={15} /> Print {printCount} label{printCount === 1 ? "" : "s"}
@@ -143,27 +182,32 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
       )}
 
       {mode === "inventory" && selectedItems.length > 0 && (
-        <div id="print-area" className="grid grid-cols-2 gap-2 mt-4">
-          {selectedItems.map((item) => (
-            <div key={item.id} className="border border-border rounded-lg p-2 flex flex-col items-center text-center">
-              {shopName && <p className="text-[8px] font-semibold text-slate truncate w-full">{shopName}</p>}
-              <p className="text-[10px] font-semibold text-ink truncate w-full">
-                {item.brand} {item.model}
-              </p>
-              <BarcodeSvg value={item.sku} height={32} width={1.3} fontSize={9} />
-              <p className="text-[10px] font-semibold text-ink">{currency(item.price)}</p>
+        <div id="print-area" className="flex flex-col gap-1 mt-4 overflow-x-auto">
+          {selectedItems.map((item, i) => (
+            <div key={item.id} className="border border-border rounded">
+              <LabelStrip
+                shopName={shopName}
+                primary={`${item.brand} ${item.model}`}
+                sku={item.sku}
+                price={item.price}
+                isLast={i === selectedItems.length - 1}
+              />
             </div>
           ))}
         </div>
       )}
 
       {mode === "blank" && blankLabels.length > 0 && (
-        <div id="print-area" className="grid grid-cols-2 gap-2 mt-4">
-          {blankLabels.map((label) => (
-            <div key={label.sku} className="border border-border rounded-lg p-2 flex flex-col items-center text-center">
-              {shopName && <p className="text-[8px] font-semibold text-slate truncate w-full">{shopName}</p>}
-              <BarcodeSvg value={label.sku} height={32} width={1.3} fontSize={9} />
-              {label.price != null && <p className="text-[10px] font-semibold text-ink">{currency(label.price)}</p>}
+        <div id="print-area" className="flex flex-col gap-1 mt-4 overflow-x-auto">
+          {blankLabels.map((label, i) => (
+            <div key={label.sku} className="border border-border rounded">
+              <LabelStrip
+                shopName={shopName}
+                primary={frameCategoryLabel(label.category) !== label.category ? frameCategoryLabel(label.category) : itemTypeLabel(label.category)}
+                sku={label.sku}
+                price={label.price}
+                isLast={i === blankLabels.length - 1}
+              />
             </div>
           ))}
         </div>
