@@ -28,7 +28,18 @@ export default function BarcodeScanner({ onDetect, onClose }) {
       }
       try {
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" } } },
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              // A sharper feed lets the reader pick out thin bars from a
+              // comfortable distance instead of forcing the phone closer
+              // than its camera can actually focus -- the default stream
+              // is low-res enough that tiny labels need an uncomfortably
+              // (and often unfocusable) close-up shot to decode at all.
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          },
           videoRef.current,
           (result, _err, ctrl) => {
             if (result && !detected) {
