@@ -99,8 +99,9 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
       {!rows ? (
         <>
           <p className="text-xs text-slate mb-3">
-            Photograph a handwritten or printed stock list — brand, model/code, quantity, and price — and AI will read
-            out every row for you to review before adding.
+            Photograph a handwritten or printed stock list, or just the physical frames themselves laid out on a tray —
+            AI reads the brand/model off either one (from the temple engraving on real frames) for you to review before
+            adding.
           </p>
           <button
             type="button"
@@ -109,7 +110,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
             className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
           >
             {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            {scanning ? "Reading list…" : "Scan a stock list"}
+            {scanning ? "Reading photo…" : "Scan list or frames"}
             {!scanning && <Sparkles size={12} />}
           </button>
           {scanNotice && <p className="text-[11px] text-slate mt-2">{scanNotice}</p>}
