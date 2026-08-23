@@ -6,7 +6,7 @@ import { parseRxPower, parseRxAxis, parseRxAdd, parseRxPlainNumber, RX_SCAN_FIEL
 import { Modal, Field, VoiceInput, VoiceRxInput, VoiceSelect, VoiceTextArea, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 
-export default function AddRxModal({ onClose, onSave, initial }) {
+export default function AddRxModal({ onClose, onSave, initial, branchId }) {
   const [f, setF] = useState(() => {
     const base = {
       chiefComplaint: "",
@@ -47,7 +47,7 @@ export default function AddRxModal({ onClose, onSave, initial }) {
     setScanning(true);
     setScanNotice("");
     try {
-      const result = await scanPrescription(photo);
+      const result = await scanPrescription(photo, branchId);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI prescription scanning isn't set up yet.");
       } else if (result?.error) {

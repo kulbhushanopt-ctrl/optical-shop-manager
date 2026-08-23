@@ -25,6 +25,42 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Every AI feature shares one Gemini key by default, but a branch owner can
+// set their own (Shop settings) so one shop's heavy usage never eats into
+// another shop's daily quota. This only ever borrows a branch's own key when
+// the caller (identified by the incoming Authorization header) is actually a
+// member of that branch -- otherwise it silently falls back to the shared
+// default, exactly as if no branchId had been passed at all.
+async function resolveGeminiKey(branchId: string | null | undefined, authHeader: string | null): Promise<string | null> {
+  const defaultKey = Deno.env.get("GEMINI_API_KEY") ?? null;
+  if (!branchId || !authHeader) return defaultKey;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !anonKey || !serviceKey) return defaultKey;
+
+  try {
+    const memberRes = await fetch(`${supabaseUrl}/rest/v1/rpc/is_branch_member`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: anonKey, Authorization: authHeader },
+      body: JSON.stringify({ b: branchId }),
+    });
+    if (!memberRes.ok || (await memberRes.json()) !== true) return defaultKey;
+
+    const keyRes = await fetch(`${supabaseUrl}/rest/v1/rpc/get_branch_gemini_key`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ p_branch_id: branchId }),
+    });
+    if (!keyRes.ok) return defaultKey;
+    const branchKey = await keyRes.json();
+    return branchKey || defaultKey;
+  } catch {
+    return defaultKey;
+  }
+}
+
 const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for adding eyewear inventory into strict JSON. The speech is Indian English, transcribed by voice recognition and may contain minor errors (e.g. "gents" may be misheard as "giants"). Numbers may be spoken as words (e.g. "two thousand", "twenty", "a dozen"); prices are in Indian Rupees. Extract:
 - type: one of "frame", "sunglasses", "lens", "contact", "accessory" -- infer from context; default to "frame" if it's clearly eyewear stock but the exact type is unclear; use null only if you truly cannot tell it's inventory at all
 - category: for frames, the closest match among these category codes based on gender + material + tier mentioned ("gents metal" -> "GM", "ladies sheet exclusive" -> "LSX", "kids boys" -> "KB", etc): "LM" (Ladies Metal), "LMX" (Ladies Metal Exclusive), "LS" (Ladies Sheet), "LSX" (Ladies Sheet Exclusive), "LF" (Ladies Frameless), "GM" (Gents Metal), "GMX" (Gents Metal Exclusive), "GS" (Gents Sheet), "GSX" (Gents Sheet Exclusive), "GF" (Gents Frameless), "KB" (Kids Boys), "KBX" (Kids Boys Exclusive), "KG" (Kids Girls), "KGX" (Kids Girls Exclusive). Use null if no such gender/material combination is mentioned, or the item isn't a frame.
@@ -44,15 +80,17 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   let text: string | undefined;
+  let branchId: string | undefined;
   try {
     const body = await req.json();
     text = body?.text;
+    branchId = body?.branchId;
   } catch {
     return json({ error: "bad_request", message: "Expected JSON body with a `text` field." }, 400);
   }
   if (!text || !text.trim()) return json({ error: "bad_request", message: "Missing `text`." }, 400);
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await resolveGeminiKey(branchId, req.headers.get("Authorization"));
   if (!apiKey) {
     return json({
       error: "not_configured",

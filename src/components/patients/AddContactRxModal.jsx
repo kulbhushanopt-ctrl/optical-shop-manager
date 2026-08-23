@@ -13,7 +13,7 @@ const BLANK = {
   brand: "", duration: "", notes: "",
 };
 
-export default function AddContactRxModal({ onClose, onSave, initial }) {
+export default function AddContactRxModal({ onClose, onSave, initial, branchId }) {
   const [f, setF] = useState({ ...BLANK, ...(initial || {}) });
   const [showCamera, setShowCamera] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -25,7 +25,7 @@ export default function AddContactRxModal({ onClose, onSave, initial }) {
     setScanning(true);
     setScanNotice("");
     try {
-      const result = await scanContactPrescription(photo);
+      const result = await scanContactPrescription(photo, branchId);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI prescription scanning isn't set up yet.");
       } else if (result?.error) {

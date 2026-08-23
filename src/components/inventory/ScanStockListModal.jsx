@@ -49,7 +49,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
     setScanning(true);
     setScanNotice("");
     try {
-      const result = await scanStockList(photo);
+      const result = await scanStockList(photo, branchId);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI stock-list scanning isn't set up yet.");
       } else if (result?.error) {

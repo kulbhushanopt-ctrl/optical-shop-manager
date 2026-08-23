@@ -532,8 +532,8 @@ async function invokeAiFunction(name, body) {
 // stock list via the scan-stock-list Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function scanStockList(imageDataUrl) {
-  return invokeAiFunction("scan-stock-list", { image: imageDataUrl });
+export async function scanStockList(imageDataUrl, branchId) {
+  return invokeAiFunction("scan-stock-list", { image: imageDataUrl, branchId });
 }
 
 /* ---------- AI voice-command inventory entry ---------- */
@@ -541,8 +541,8 @@ export async function scanStockList(imageDataUrl) {
 // via the parse-inventory-command Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function parseInventoryCommand(text) {
-  return invokeAiFunction("parse-inventory-command", { text });
+export async function parseInventoryCommand(text, branchId) {
+  return invokeAiFunction("parse-inventory-command", { text, branchId });
 }
 
 /* ---------- AI prescription scan ---------- */
@@ -550,8 +550,8 @@ export async function parseInventoryCommand(text) {
 // prescription slip via the scan-prescription Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function scanPrescription(imageDataUrl) {
-  return invokeAiFunction("scan-prescription", { image: imageDataUrl });
+export async function scanPrescription(imageDataUrl, branchId) {
+  return invokeAiFunction("scan-prescription", { image: imageDataUrl, branchId });
 }
 
 /* ---------- AI contact lens prescription scan ---------- */
@@ -560,8 +560,8 @@ export async function scanPrescription(imageDataUrl) {
 // scan-contact-rx Edge Function. Returns { error: "not_configured", message }
 // until a GEMINI_API_KEY secret is set on the Supabase project -- that's a
 // normal, expected response.
-export async function scanContactPrescription(imageDataUrl) {
-  return invokeAiFunction("scan-contact-rx", { image: imageDataUrl });
+export async function scanContactPrescription(imageDataUrl, branchId) {
+  return invokeAiFunction("scan-contact-rx", { image: imageDataUrl, branchId });
 }
 
 /* ---------- AI patient intake scan ---------- */
@@ -570,6 +570,28 @@ export async function scanContactPrescription(imageDataUrl) {
 // patient and their first Rx can be filled from one photo. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function scanPatientIntake(imageDataUrl) {
-  return invokeAiFunction("scan-patient-intake", { image: imageDataUrl });
+export async function scanPatientIntake(imageDataUrl, branchId) {
+  return invokeAiFunction("scan-patient-intake", { image: imageDataUrl, branchId });
+}
+
+/* ---------- Per-branch Gemini API key (Shop settings) ---------- */
+// Lets a branch owner set their own Gemini API key instead of sharing the
+// one key configured project-wide -- so their AI usage (scans, voice/text
+// commands) doesn't count against every other shop's daily quota. The key
+// itself is write-only from here: these RPCs never return it, only accept
+// or clear it, or report whether one is set.
+export async function setBranchGeminiKey(branchId, key) {
+  const { error } = await supabase.rpc("set_branch_gemini_key", { p_branch_id: branchId, p_key: key });
+  if (error) throw error;
+}
+
+export async function clearBranchGeminiKey(branchId) {
+  const { error } = await supabase.rpc("clear_branch_gemini_key", { p_branch_id: branchId });
+  if (error) throw error;
+}
+
+export async function hasBranchGeminiKey(branchId) {
+  const { data, error } = await supabase.rpc("has_branch_gemini_key", { p_branch_id: branchId });
+  if (error) throw error;
+  return !!data;
 }

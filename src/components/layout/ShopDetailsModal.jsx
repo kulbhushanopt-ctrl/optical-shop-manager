@@ -4,6 +4,7 @@ import { updateBranch, signOut } from "../../lib/api";
 import { compressImage } from "../../lib/image";
 import { Modal, Field, TextInput, TextArea, PrimaryBtn, SecondaryBtn } from "../shared/ui";
 import StaffModal from "./StaffModal";
+import AiKeyModal from "./AiKeyModal";
 
 export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId, onBranchUpdated }) {
   const [name, setName] = useState(shopInfo.name || "");
@@ -17,6 +18,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showStaff, setShowStaff] = useState(false);
+  const [showAiKey, setShowAiKey] = useState(false);
   const logoInputRef = useRef(null);
 
   const handleLogoPick = async (e) => {
@@ -56,6 +58,10 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
 
   if (showStaff) {
     return <StaffModal branchId={branchId} branchName={shopInfo.name} onClose={() => setShowStaff(false)} />;
+  }
+
+  if (showAiKey) {
+    return <AiKeyModal branchId={branchId} onClose={() => setShowAiKey(false)} />;
   }
 
   return (
@@ -134,6 +140,12 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
         {isOwner && (
           <SecondaryBtn full onClick={() => setShowStaff(true)}>
             Manage staff
+          </SecondaryBtn>
+        )}
+
+        {isOwner && (
+          <SecondaryBtn full onClick={() => setShowAiKey(true)}>
+            AI usage & API key
           </SecondaryBtn>
         )}
       </div>

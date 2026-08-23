@@ -247,8 +247,8 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
         </div>
       )}
 
-      {showAdd && <AddPatientModal onClose={() => setShowAdd(false)} onSave={addPatient} />}
-      {editPatient && <AddPatientModal initial={editPatient} onClose={() => setEditPatient(null)} onSave={saveEditedPatient} />}
+      {showAdd && <AddPatientModal branchId={branchId} onClose={() => setShowAdd(false)} onSave={addPatient} />}
+      {editPatient && <AddPatientModal branchId={branchId} initial={editPatient} onClose={() => setEditPatient(null)} onSave={saveEditedPatient} />}
       {showImport && (
         <ImportPatientsExcelModal
           branchId={branchId}
@@ -262,6 +262,7 @@ export default function PatientsTab({ patients, setPatients, branchId, isOwner, 
       {openPatient && (
         <PatientDetailModal
           patient={openPatient}
+          branchId={branchId}
           onClose={() => setOpenPatientId(null)}
           onUpdate={updatePatientRx}
           onDelete={deletePatient}

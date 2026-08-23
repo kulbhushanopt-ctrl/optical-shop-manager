@@ -13,6 +13,7 @@ import AppointmentModal from "./AppointmentModal";
 
 export default function PatientDetailModal({
   patient,
+  branchId,
   onClose,
   onUpdate,
   onDelete,
@@ -363,8 +364,8 @@ export default function PatientDetailModal({
         </div>
       )}
 
-      {showRx && <AddRxModal onClose={() => setShowRx(false)} onSave={addRx} />}
-      {editingRx && <AddRxModal initial={editingRx} onClose={() => setEditingRx(null)} onSave={saveEditedRx} />}
+      {showRx && <AddRxModal branchId={branchId} onClose={() => setShowRx(false)} onSave={addRx} />}
+      {editingRx && <AddRxModal branchId={branchId} initial={editingRx} onClose={() => setEditingRx(null)} onSave={saveEditedRx} />}
       {slipRx && <RxSlipModal patient={patient} rx={slipRx} shopInfo={shopInfo} onClose={() => setSlipRx(null)} />}
 
       <div className="flex items-center justify-between mb-2">
@@ -426,9 +427,9 @@ export default function PatientDetailModal({
         </div>
       )}
 
-      {showContactRx && <AddContactRxModal onClose={() => setShowContactRx(false)} onSave={addContactRx} />}
+      {showContactRx && <AddContactRxModal branchId={branchId} onClose={() => setShowContactRx(false)} onSave={addContactRx} />}
       {editingContactRx && (
-        <AddContactRxModal initial={editingContactRx} onClose={() => setEditingContactRx(null)} onSave={saveEditedContactRx} />
+        <AddContactRxModal branchId={branchId} initial={editingContactRx} onClose={() => setEditingContactRx(null)} onSave={saveEditedContactRx} />
       )}
 
       {canDelete &&

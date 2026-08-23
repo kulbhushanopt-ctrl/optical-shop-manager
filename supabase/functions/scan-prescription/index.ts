@@ -26,21 +26,59 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Every AI feature shares one Gemini key by default, but a branch owner can
+// set their own (Shop settings) so one shop's heavy scanning never eats into
+// another shop's daily quota. This only ever borrows a branch's own key when
+// the caller (identified by the incoming Authorization header) is actually a
+// member of that branch -- otherwise it silently falls back to the shared
+// default, exactly as if no branchId had been passed at all.
+async function resolveGeminiKey(branchId: string | null | undefined, authHeader: string | null): Promise<string | null> {
+  const defaultKey = Deno.env.get("GEMINI_API_KEY") ?? null;
+  if (!branchId || !authHeader) return defaultKey;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !anonKey || !serviceKey) return defaultKey;
+
+  try {
+    const memberRes = await fetch(`${supabaseUrl}/rest/v1/rpc/is_branch_member`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: anonKey, Authorization: authHeader },
+      body: JSON.stringify({ b: branchId }),
+    });
+    if (!memberRes.ok || (await memberRes.json()) !== true) return defaultKey;
+
+    const keyRes = await fetch(`${supabaseUrl}/rest/v1/rpc/get_branch_gemini_key`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      body: JSON.stringify({ p_branch_id: branchId }),
+    });
+    if (!keyRes.ok) return defaultKey;
+    const branchKey = await keyRes.json();
+    return branchKey || defaultKey;
+  } catch {
+    return defaultKey;
+  }
+}
+
 const PROMPT = `You are reading a photo of an eyeglass prescription (a printed or handwritten optometrist's Rx slip). It typically has two rows for the right eye (labeled OD, RE, or R) and left eye (OS, LE, or L), each with SPH (sphere), CYL (cylinder), and AXIS values, and sometimes an ADD (near addition power) value. There is sometimes also a PD (pupillary distance) value in mm, and a VA (visual acuity after correction) value per eye, usually written as a fraction like "6/6" or "6/9" (or the imperial equivalent, e.g. "20/20"). Read the values carefully and respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"odSphere": string|null, "odCyl": string|null, "odAxis": string|null, "odAdd": string|null, "odVA": string|null, "osSphere": string|null, "osCyl": string|null, "osAxis": string|null, "osAdd": string|null, "osVA": string|null, "pd": string|null}. Sphere and cylinder values should include their sign (+ or -) and two decimal places (e.g. "-2.00", "+1.25"). Axis should be a plain number from 0-180. Only report values you can actually read clearly in the image -- use null for anything illegible, missing, or you're not confident about. Never guess or invent a value.`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   let image: string | undefined;
+  let branchId: string | undefined;
   try {
     const body = await req.json();
     image = body?.image;
+    branchId = body?.branchId;
   } catch {
     return json({ error: "bad_request", message: "Expected JSON body with an `image` field." }, 400);
   }
   if (!image) return json({ error: "bad_request", message: "Missing `image`." }, 400);
 
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = await resolveGeminiKey(branchId, req.headers.get("Authorization"));
   if (!apiKey) {
     return json({
       error: "not_configured",

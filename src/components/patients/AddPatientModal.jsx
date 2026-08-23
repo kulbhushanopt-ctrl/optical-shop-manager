@@ -6,7 +6,7 @@ import { scanPatientIntake } from "../../lib/api";
 import { RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
 import CameraCapture from "../shared/CameraCapture";
 
-export default function AddPatientModal({ onClose, onSave, initial }) {
+export default function AddPatientModal({ onClose, onSave, initial, branchId }) {
   const [name, setName] = useState(initial?.name || "");
   const [phone, setPhone] = useState(initial?.phone || "");
   const [dob, setDob] = useState(initial?.dob || "");
@@ -30,7 +30,7 @@ export default function AddPatientModal({ onClose, onSave, initial }) {
     setScanning(true);
     setScanNotice("");
     try {
-      const result = await scanPatientIntake(photo);
+      const result = await scanPatientIntake(photo, branchId);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI form scanning isn't set up yet.");
       } else if (result?.error) {

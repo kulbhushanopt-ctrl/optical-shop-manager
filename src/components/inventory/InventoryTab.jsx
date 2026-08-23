@@ -105,7 +105,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   // sentence turned into a prefilled item, or an error message to show.
   const runCommand = async (text) => {
     try {
-      const result = await parseInventoryCommand(text);
+      const result = await parseInventoryCommand(text, branchId);
       if (result?.error === "not_configured") {
         return result.message || "AI entry isn't set up yet.";
       }
