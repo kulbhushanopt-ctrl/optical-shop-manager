@@ -285,6 +285,34 @@ export async function deleteInventoryItem(id) {
   if (error) throw error;
 }
 
+/* ---------- Label reservations ---------- */
+// Remembers the category/price printed on a "blank label" (generated before
+// the item exists in inventory) so that scanning the label later at Add Item
+// time can fill in more than just the SKU. One row per SKU per branch --
+// generating a fresh batch upserts over any older reservation for the same
+// SKU rather than erroring.
+export async function createLabelReservations(branchId, labels) {
+  const rows = labels.map((l) => ({ branch_id: branchId, sku: l.sku, category: l.category || null, price: l.price ?? null }));
+  const { error } = await supabase.from("label_reservations").upsert(rows, { onConflict: "branch_id,sku" });
+  if (error) throw error;
+}
+
+export async function fetchLabelReservation(branchId, sku) {
+  const { data, error } = await supabase
+    .from("label_reservations")
+    .select("*")
+    .eq("branch_id", branchId)
+    .eq("sku", sku)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteLabelReservation(branchId, sku) {
+  const { error } = await supabase.from("label_reservations").delete().eq("branch_id", branchId).eq("sku", sku);
+  if (error) throw error;
+}
+
 /* ---------- Invoices ---------- */
 function invoiceToDb(inv) {
   return {

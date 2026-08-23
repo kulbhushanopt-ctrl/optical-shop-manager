@@ -4,6 +4,7 @@ import { Modal } from "../shared/ui";
 import { currency } from "../../lib/format";
 import BarcodeSvg from "../shared/BarcodeSvg";
 import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
+import { createLabelReservations } from "../../lib/api";
 
 const NON_FRAME_TYPES = ITEM_TYPES.filter((t) => t.id !== "frame");
 const ALL_CATEGORIES = [
@@ -142,7 +143,7 @@ function printLabelsInNewWindow(labels, svgEls) {
   setTimeout(() => printWindow.print(), 150);
 }
 
-export default function PrintLabelsModal({ inventory, shopName, onClose }) {
+export default function PrintLabelsModal({ inventory, shopName, branchId, onClose }) {
   const [mode, setMode] = useState("inventory");
   const previewRef = useRef(null);
 
@@ -175,7 +176,7 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
   // batch across several categories at once still gives every category its
   // own independent, continuing number sequence -- LM and LS never share a
   // counter just because they were generated together.
-  const generateBlankLabels = () => {
+  const generateBlankLabels = async () => {
     const price = blankPrice ? Number(blankPrice) : null;
     const labels = [];
     const skusSoFar = [];
@@ -188,6 +189,13 @@ export default function PrintLabelsModal({ inventory, shopName, onClose }) {
       }
     }
     setBlankLabels(labels);
+    // Remembered so that scanning the printed label later at Add Item time
+    // can fill in category and price too, not just the SKU.
+    try {
+      await createLabelReservations(branchId, labels);
+    } catch (e) {
+      /* non-fatal -- the labels still print and the SKU still scans fine, just without prefilled price/category */
+    }
   };
 
   const printCount = mode === "inventory" ? selectedItems.length : blankLabels.length;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera } from "lucide-react";
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand } from "../../lib/api";
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, parseInventoryCommand, deleteLabelReservation } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
 import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel } from "../../lib/rxConstants";
@@ -49,6 +49,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       setInventory([saved, ...inventory]);
       setShowAdd(false);
       setVoiceDraft(null);
+      // Clears the printed-label reservation (if this SKU came from a
+      // scanned blank label) now that it's a real inventory item.
+      if (saved.sku) deleteLabelReservation(branchId, saved.sku).catch(() => {});
     } catch (e) {
       setError("Couldn't save item — please try again.");
     }
@@ -203,12 +206,14 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         </div>
       )}
 
-      {isOwner && showAdd && <ItemFormModal title="Add stock item" inventory={inventory} onClose={() => setShowAdd(false)} onSave={addItem} />}
+      {isOwner && showAdd && (
+        <ItemFormModal title="Add stock item" inventory={inventory} branchId={branchId} onClose={() => setShowAdd(false)} onSave={addItem} />
+      )}
       {isOwner && editItem && (
-        <ItemFormModal title="Edit item" initial={editItem} inventory={inventory} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
+        <ItemFormModal title="Edit item" initial={editItem} inventory={inventory} branchId={branchId} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
       )}
       {isOwner && voiceDraft && (
-        <ItemFormModal title="Add stock item" initial={voiceDraft} inventory={inventory} onClose={() => setVoiceDraft(null)} onSave={addItem} />
+        <ItemFormModal title="Add stock item" initial={voiceDraft} inventory={inventory} branchId={branchId} onClose={() => setVoiceDraft(null)} onSave={addItem} />
       )}
       {isOwner && showImport && (
         <ImportExcelModal
@@ -244,7 +249,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         />
       )}
       {isOwner && showLabels && (
-        <PrintLabelsModal inventory={inventory} shopName={shopName} onClose={() => setShowLabels(false)} />
+        <PrintLabelsModal inventory={inventory} shopName={shopName} branchId={branchId} onClose={() => setShowLabels(false)} />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS, FRAME_CATEGORIES, suggestNextSku } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
+import { fetchLabelReservation } from "../../lib/api";
 
 // The barcode decoder library is large and only needed once someone
 // actually opens the scanner, so it's split into its own chunk instead of
@@ -26,7 +27,7 @@ const BLANK_ITEM = {
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
 
-export default function ItemFormModal({ title, initial, inventory, onClose, onSave, onDelete }) {
+export default function ItemFormModal({ title, initial, inventory, branchId, onClose, onSave, onDelete }) {
   // `initial` may be a full existing item (editing) or a partial AI-parsed
   // prefill (voice add) -- merge over blank defaults either way so missing
   // fields (e.g. `low`, `coatings`) don't end up undefined.
@@ -89,9 +90,24 @@ export default function ItemFormModal({ title, initial, inventory, onClose, onSa
       {showScanner && (
         <Suspense fallback={null}>
           <BarcodeScanner
-            onDetect={(code) => {
+            onDetect={async (code) => {
               setF((prev) => ({ ...prev, sku: code }));
               setShowScanner(false);
+              // If this code matches a printed "blank label" batch, recover
+              // the category/price that were reserved for it too, instead
+              // of only filling the SKU.
+              if (!branchId) return;
+              try {
+                const reservation = await fetchLabelReservation(branchId, code);
+                if (!reservation) return;
+                setF((prev) => ({
+                  ...prev,
+                  category: prev.category || reservation.category || prev.category,
+                  price: prev.price !== "" ? prev.price : reservation.price != null ? String(reservation.price) : prev.price,
+                }));
+              } catch (e) {
+                /* no reservation, or fetch failed -- SKU is already filled, nothing else to do */
+              }
             }}
             onClose={() => setShowScanner(false)}
           />
