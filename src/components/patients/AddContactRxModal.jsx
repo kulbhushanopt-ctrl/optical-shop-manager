@@ -29,7 +29,7 @@ export default function AddContactRxModal({ onClose, onSave, initial }) {
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI prescription scanning isn't set up yet.");
       } else if (result?.error) {
-        setScanNotice("Couldn't read that photo — please enter the values manually.");
+        setScanNotice(`Couldn't read that photo — please enter the values manually. (${result.message || result.error})`);
       } else {
         const anyFound = CONTACT_RX_SCAN_FIELDS.some((k) => result?.[k]);
         setF((prev) => {
