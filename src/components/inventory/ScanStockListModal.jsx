@@ -8,30 +8,45 @@ import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku } from "../../lib/rxC
 // A scanned row's model/code is used as the starting SKU -- this shop's
 // handwritten lists don't distinguish the two -- but stays independently
 // editable so a category-based SKU (see suggestNextSku below) can replace
-// it without losing the original supplier code from `model`.
-function rowFromScan(r) {
+// it without losing the original supplier code from `model`. When a batch
+// category/price was set up front, they're applied here so every row
+// arrives ready to save instead of needing that filled in per row.
+function rowFromScan(r, batchCategory, batchPrice) {
   return {
     localId: uid(),
     brand: r.brand || "",
     model: r.model || "",
     sku: r.model || "",
-    category: "",
+    category: batchCategory || "",
     type: "frame",
     quantity: r.quantity != null ? String(r.quantity) : "1",
-    price: r.price != null ? String(r.price) : "",
+    price: r.price != null ? String(r.price) : batchPrice || "",
   };
 }
 
 export default function ScanStockListModal({ branchId, inventory, onClose, onImported }) {
   const [showCamera, setShowCamera] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [batchCategory, setBatchCategory] = useState("");
+  const [batchPrice, setBatchPrice] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState("");
   const [rows, setRows] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const handleScanPhoto = async (photo) => {
+  // Photo taken -- but instead of scanning right away, ask once for the
+  // category and price that apply to this whole batch, so there's no
+  // ambiguity later about which category each row belongs to and no need
+  // to set price on every row individually.
+  const handlePhotoTaken = (photo) => {
     setShowCamera(false);
+    setPendingPhoto(photo);
+  };
+
+  const handleScanPhoto = async () => {
+    const photo = pendingPhoto;
+    setPendingPhoto(null);
     setScanning(true);
     setScanNotice("");
     try {
@@ -41,7 +56,17 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
       } else if (result?.error) {
         setScanNotice("Couldn't read that photo — please try a clearer shot.");
       } else {
-        const scanned = (result?.rows || []).map(rowFromScan);
+        // Each row gets its own SKU under the shared category so a batch of
+        // ten frames doesn't all land on the same "LM-001" number.
+        const skusSoFar = [];
+        const scanned = (result?.rows || []).map((r) => {
+          const row = rowFromScan(r, batchCategory, batchPrice);
+          if (batchCategory) {
+            row.sku = suggestNextSku(batchCategory, inventory, skusSoFar);
+            skusSoFar.push(row.sku);
+          }
+          return row;
+        });
         if (scanned.length === 0) {
           setScanNotice("Couldn't make out any rows in that photo — please try a clearer shot.");
         } else {
@@ -97,25 +122,65 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
   return (
     <Modal title="Scan stock list" onClose={onClose} wide>
       {!rows ? (
-        <>
-          <p className="text-xs text-slate mb-3">
-            Photograph a handwritten or printed stock list, or just the physical frames themselves laid out on a tray —
-            AI reads the brand/model off either one (from the temple engraving on real frames) for you to review before
-            adding.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowCamera(true)}
-            disabled={scanning}
-            className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
-          >
-            {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            {scanning ? "Reading photo…" : "Scan list or frames"}
-            {!scanning && <Sparkles size={12} />}
-          </button>
-          {scanNotice && <p className="text-[11px] text-slate mt-2">{scanNotice}</p>}
-          {showCamera && <CameraCapture onCapture={handleScanPhoto} onClose={() => setShowCamera(false)} />}
-        </>
+        pendingPhoto ? (
+          <>
+            <p className="text-xs text-slate mb-3">
+              Photo captured. Pick the category and price for this whole batch — every frame the scan finds will use
+              these, so there's no per-row guesswork. You can still fix an individual row afterward if one's different.
+            </p>
+            <div className="mb-3">
+              <Select value={batchCategory} onChange={(e) => setBatchCategory(e.target.value)}>
+                <option value="">— No category —</option>
+                {FRAME_CATEGORIES.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="mb-4">
+              <TextInput
+                type="number"
+                value={batchPrice}
+                onChange={(e) => setBatchPrice(e.target.value)}
+                placeholder="Price per frame"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingPhoto(null);
+                  setShowCamera(true);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-border text-xs font-semibold text-slate"
+              >
+                Retake photo
+              </button>
+              <div className="flex-1">
+                <PrimaryBtn full onClick={handleScanPhoto}>Scan now</PrimaryBtn>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-slate mb-3">
+              Photograph a handwritten or printed stock list, or just the physical frames themselves laid out on a tray —
+              AI reads the brand/model off either one (from the temple engraving on real frames) for you to review before
+              adding.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              disabled={scanning}
+              className="w-full py-2.5 rounded-xl border border-dashed border-lens/50 bg-lensSoft text-lens text-xs font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
+            >
+              {scanning ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+              {scanning ? "Reading photo…" : "Scan list or frames"}
+              {!scanning && <Sparkles size={12} />}
+            </button>
+            {scanNotice && <p className="text-[11px] text-slate mt-2">{scanNotice}</p>}
+            {showCamera && <CameraCapture onCapture={handlePhotoTaken} onClose={() => setShowCamera(false)} />}
+          </>
+        )
       ) : (
         <>
           <p className="text-sm font-medium text-ink mb-3">
