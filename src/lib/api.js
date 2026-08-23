@@ -222,22 +222,26 @@ export function inventoryFromDb(row) {
   return {
     id: row.id,
     type: row.type,
-    brand: row.brand,
-    model: row.model,
-    sku: row.sku,
+    // Optional text fields come back as null from a blank column (e.g. a
+    // bulk-generated item with brand/model left for the shopkeeper to fill
+    // in later) -- normalized to "" so every consumer (forms, .trim() calls)
+    // can keep assuming a string instead of null-checking everywhere.
+    brand: row.brand || "",
+    model: row.model || "",
+    sku: row.sku || "",
     price: row.price,
     stock: row.stock,
     low: row.low,
-    power: row.power,
-    addPower: row.add_power,
-    lensIndex: row.lens_index,
+    power: row.power || "",
+    addPower: row.add_power || "",
+    lensIndex: row.lens_index || "",
     coatings: row.coatings || [],
-    baseCurve: row.base_curve,
-    diameter: row.diameter,
-    duration: row.duration,
-    contactType: row.contact_type,
-    hsnCode: row.hsn_code,
-    category: row.category,
+    baseCurve: row.base_curve || "",
+    diameter: row.diameter || "",
+    duration: row.duration || "",
+    contactType: row.contact_type || "",
+    hsnCode: row.hsn_code || "",
+    category: row.category || "",
   };
 }
 

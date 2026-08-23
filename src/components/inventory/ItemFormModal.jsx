@@ -38,7 +38,7 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
     const coatings = f.coatings || [];
     setF({ ...f, coatings: coatings.includes(c) ? coatings.filter((x) => x !== c) : [...coatings, c] });
   };
-  const valid = f.brand.trim() && f.price !== "" && f.stock !== "";
+  const valid = (f.brand || "").trim() && f.price !== "" && f.stock !== "";
 
   return (
     <Modal title={title} onClose={onClose}>
