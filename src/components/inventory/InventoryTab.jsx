@@ -61,6 +61,7 @@ function voicePrefill(parsed, inventory) {
     model: parsed.model || "",
     sku,
     price: parsed.price != null ? String(parsed.price) : "",
+    purchasePrice: parsed.purchaseCost != null ? String(parsed.purchaseCost) : "",
     stock: parsed.stock != null ? String(parsed.stock) : "",
   };
 }
@@ -114,19 +115,23 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       const category = result.category || detectCategoryFromText(text) || "";
       const qty = Math.max(0, Math.min(100, Number(result.quantity) || 0));
       if (qty > 1) {
-        // "Twenty frames of gents metal" -- no single brand/model was named,
-        // so this creates that many separate, individually-SKU'd rows
-        // instead of opening the single-item form. Brand/model are left
-        // blank for each; the shopkeeper fills those in per frame later
+        // "Twenty frames of gents metal" (no brand named) or "Giovani 11
+        // frames ... each to have a separate SKU" (brand named, but still
+        // wants individual listings) -- either way this creates that many
+        // separate, individually-SKU'd rows instead of opening the
+        // single-item form. Brand carries over if one was named; model is
+        // always left blank for the shopkeeper to fill in per frame later
         // (the same "generate now, detail later" flow as blank labels).
         const type = ITEM_TYPES.some((t) => t.id === result.type) ? result.type : "frame";
         const price = result.price != null ? Number(result.price) : 0;
+        const purchasePrice = result.purchaseCost != null ? Number(result.purchaseCost) : null;
+        const brand = result.brand || "";
         const skusSoFar = [];
         const items = [];
         for (let i = 0; i < qty; i++) {
           const sku = suggestNextSku(category || type, inventory, skusSoFar);
           skusSoFar.push(sku);
-          items.push({ type, category: category || null, brand: "", model: "", sku, price, stock: 1, low: 3 });
+          items.push({ type, category: category || null, brand, model: "", sku, price, purchasePrice, stock: 1, low: 3 });
         }
         const created = await createInventoryItems(branchId, items);
         setInventory([...created, ...inventory]);

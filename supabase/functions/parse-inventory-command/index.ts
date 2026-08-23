@@ -31,13 +31,14 @@ const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for a
 - brand: brand name if mentioned, else null
 - model: model name or number if mentioned, else null
 - sku: any color, code, or short descriptor mentioned that isn't the brand, model, or category (e.g. "black", "matte finish"), else null
-- price: the price as a plain number in rupees (per unit), converting any spoken number words to digits, else null
-- quantity: how many SEPARATE, individually distinct items to create -- use this (not stock) when NO specific brand/model was named, e.g. "add twenty frames of gents metal" means twenty different gents metal frames that each need their own listing. Else null.
-- stock: the stock count for ONE item -- use this (not quantity) when a specific brand/model WAS named, e.g. "add ten Ray-Ban Aviators" means ten units of that one model. Else null.
+- price: the selling price (MRP) as a plain number in rupees (per unit), converting any spoken number words to digits, else null
+- purchaseCost: the purchase/cost price per unit as a plain number in rupees, if mentioned (e.g. "purchase cost 250", "cost price 250", "bought at 250"), else null
+- quantity: how many SEPARATE, individually distinct items to create, each needing its own SKU -- use this (not stock) whenever either (a) no specific brand/model was named at all, e.g. "add twenty frames of gents metal", or (b) the instruction explicitly says each unit needs its own/separate/individual SKU even though a brand WAS named, e.g. "add Giovani 11 frames ... each of the 11 frames to have a separate SKU" means eleven different Giovani frames, each its own listing. Else null.
+- stock: the stock count for ONE single item -- use this (not quantity) only when a specific brand/model was named AND nothing indicates the units need separate/individual SKUs, e.g. "add ten Ray-Ban Aviators" means ten units of that one model. Else null.
 
-A spoken number is either a quantity of separate items or a stock count of one item, never both -- set only whichever applies, and leave the other null.
+A spoken number is either a quantity of separate items or a stock count of one item, never both -- set only whichever applies, and leave the other null. Mentioning "separate SKU" or "individual SKU" always means quantity, never stock, regardless of whether a brand was named.
 
-Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"type": string|null, "category": string|null, "brand": string|null, "model": string|null, "sku": string|null, "price": number|null, "quantity": number|null, "stock": number|null}`;
+Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"type": string|null, "category": string|null, "brand": string|null, "model": string|null, "sku": string|null, "price": number|null, "purchaseCost": number|null, "quantity": number|null, "stock": number|null}`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -87,7 +88,7 @@ Deno.serve(async (req: Request) => {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      parsed = { type: null, category: null, brand: null, model: null, sku: null, price: null, quantity: null, stock: null };
+      parsed = { type: null, category: null, brand: null, model: null, sku: null, price: null, purchaseCost: null, quantity: null, stock: null };
     }
 
     return json(parsed);
