@@ -32,7 +32,7 @@ function printLabelPage() {
 function LabelStrip({ shopName, primary, sku, price, isLast }) {
   return (
     <div
-      className="flex items-center justify-center gap-3 px-3 overflow-hidden"
+      className="flex items-center justify-center gap-8 px-3 overflow-hidden"
       style={{
         width: LABEL_WIDTH,
         height: LABEL_HEIGHT,
