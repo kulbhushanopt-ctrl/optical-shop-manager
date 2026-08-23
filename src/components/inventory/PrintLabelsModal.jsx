@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Printer } from "lucide-react";
 import { Modal } from "../shared/ui";
 import { currency } from "../../lib/format";
-import BarcodeSvg from "../shared/BarcodeSvg";
+import QrCodeSvg from "../shared/QrCodeSvg";
 import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
 import { createLabelReservations } from "../../lib/api";
 
@@ -21,13 +21,10 @@ const LABEL_WIDTH = "6cm";
 const LABEL_HEIGHT = "1.2cm";
 const HALF_WIDTH = "3cm";
 
-// Stretched to fill both the full width AND full height of its half,
-// rather than "auto" height (which locks to the barcode's natural aspect
-// ratio and was capping how tall the bars/SKU text could get regardless of
-// how big we generated them). Stretching vertically doesn't hurt scanning
-// -- a scanner only reads the horizontal pattern of bar/space widths along
-// its scan line, so taller bars are just easier to read, not different data.
-const BARCODE_STYLE = { width: "80%", height: "100%", display: "block" };
+// QR is square, so it's sized to the label's full height (the smaller of
+// the two dimensions) and left to sit centered within its half -- it can't
+// stretch to fill the whole wide half without stopping being scannable.
+const QR_STYLE = { width: LABEL_HEIGHT, height: LABEL_HEIGHT, display: "block" };
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (
@@ -37,8 +34,9 @@ function LabelStrip({ shopName, primary, sku, price }) {
         <p className="text-[11px] leading-tight font-semibold text-ink truncate w-full">{primary}</p>
         {price != null && <p className="text-[12px] leading-tight font-semibold text-ink">{currency(price)}</p>}
       </div>
-      <div className="flex items-center justify-center overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
-        <BarcodeSvg value={sku} height={24} width={2} fontSize={16} fontOptions="bold" style={BARCODE_STYLE} />
+      <div className="flex items-center justify-center gap-1.5 overflow-hidden px-1" style={{ width: HALF_WIDTH }}>
+        <QrCodeSvg value={sku} style={QR_STYLE} />
+        <p className="text-[11px] font-semibold text-ink">{sku}</p>
       </div>
     </div>
   );
@@ -94,14 +92,16 @@ function printLabelsInNewWindow(labels, svgEls) {
     .shop { font-size: 9px; font-weight: 600; }
     .primary { font-size: 11px; font-weight: 600; }
     .price { font-size: 12px; font-weight: 600; }
-    .barcode-cell {
+    .qr-cell {
       width: ${HALF_WIDTH};
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
       overflow: hidden;
       padding: 0 4px;
     }
+    .qr-cell p { margin: 0; font-size: 11px; font-weight: 600; }
   `;
   doc.head.appendChild(style);
 
@@ -129,10 +129,13 @@ function printLabelsInNewWindow(labels, svgEls) {
     }
     div.appendChild(textDiv);
 
-    const barcodeCell = doc.createElement("div");
-    barcodeCell.className = "barcode-cell";
-    if (svgEls[i]) barcodeCell.appendChild(svgEls[i].cloneNode(true));
-    div.appendChild(barcodeCell);
+    const qrCell = doc.createElement("div");
+    qrCell.className = "qr-cell";
+    if (svgEls[i]) qrCell.appendChild(svgEls[i].cloneNode(true));
+    const skuP = doc.createElement("p");
+    skuP.textContent = label.sku;
+    qrCell.appendChild(skuP);
+    div.appendChild(qrCell);
 
     doc.body.appendChild(div);
   });
@@ -207,6 +210,7 @@ export default function PrintLabelsModal({ inventory, shopName, branchId, onClos
         ? selectedItems.map((item) => ({
             shopName,
             primary: `${item.brand} ${item.model}`,
+            sku: item.sku,
             priceText: item.price != null ? currency(item.price) : "",
           }))
         : blankLabels.map((label) => ({
@@ -215,6 +219,7 @@ export default function PrintLabelsModal({ inventory, shopName, branchId, onClos
               frameCategoryLabel(label.category) !== label.category
                 ? frameCategoryLabel(label.category)
                 : itemTypeLabel(label.category),
+            sku: label.sku,
             priceText: label.price != null ? currency(label.price) : "",
           }));
     printLabelsInNewWindow(labels, svgEls);
