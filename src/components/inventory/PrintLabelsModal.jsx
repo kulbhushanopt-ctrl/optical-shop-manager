@@ -32,7 +32,7 @@ function printLabelPage() {
 function LabelStrip({ shopName, primary, sku, price, isLast }) {
   return (
     <div
-      className="flex items-center gap-2 px-2 overflow-hidden"
+      className="flex items-center justify-center gap-3 px-3 overflow-hidden"
       style={{
         width: LABEL_WIDTH,
         height: LABEL_HEIGHT,
@@ -40,7 +40,7 @@ function LabelStrip({ shopName, primary, sku, price, isLast }) {
         pageBreakAfter: isLast ? "auto" : "always",
       }}
     >
-      <div className="flex-1 min-w-0">
+      <div className="text-left max-w-[1.6in]">
         {shopName && <p className="text-[7px] leading-tight text-ink truncate">{shopName}</p>}
         <p className="text-[9px] leading-tight font-semibold text-ink truncate">{primary}</p>
         {price != null && <p className="text-[9px] leading-tight font-semibold text-ink">{currency(price)}</p>}
