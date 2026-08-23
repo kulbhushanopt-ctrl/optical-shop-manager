@@ -21,10 +21,13 @@ const LABEL_WIDTH = "6cm";
 const LABEL_HEIGHT = "1.2cm";
 const HALF_WIDTH = "3cm";
 
-// QR is square, so it's sized to the label's full height (the smaller of
-// the two dimensions) and left to sit centered within its half -- it can't
+// QR is square, so it's sized off the label's height (the smaller of the
+// two dimensions) and left to sit centered within its half -- it can't
 // stretch to fill the whole wide half without stopping being scannable.
-const QR_STYLE = { width: LABEL_HEIGHT, height: LABEL_HEIGHT, display: "block" };
+// Sized to 90% of that so it doesn't run edge-to-edge against the label's
+// top/bottom border.
+const QR_SIZE = "1.08cm";
+const QR_STYLE = { width: QR_SIZE, height: QR_SIZE, display: "block" };
 
 function LabelStrip({ shopName, primary, sku, price }) {
   return (

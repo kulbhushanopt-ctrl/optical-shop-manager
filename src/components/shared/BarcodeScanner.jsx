@@ -96,7 +96,10 @@ export default function BarcodeScanner({ onDetect, onClose }) {
         ) : (
           <>
             <video ref={videoRef} playsInline muted className="max-h-full max-w-full object-contain" />
-            <div className="absolute inset-x-10 top-1/2 -translate-y-1/2 h-20 border-2 border-focus rounded-lg pointer-events-none" />
+            {/* Square guide, matching the QR codes printed on labels -- a wide
+                horizontal box (right for a 1D barcode) was misleading now
+                that every printed label uses a QR code instead. */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 border-2 border-focus rounded-lg pointer-events-none" />
           </>
         )}
       </div>
