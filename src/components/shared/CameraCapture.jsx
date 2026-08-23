@@ -98,7 +98,7 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
         )}
       </div>
 
-      <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryPick} />
+      <input ref={galleryInputRef} type="file" accept="image/*" className="sr-only" onChange={handleGalleryPick} />
 
       <div className="p-5 flex items-center justify-center gap-4 flex-shrink-0">
         {error ? (

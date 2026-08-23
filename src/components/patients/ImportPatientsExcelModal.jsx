@@ -191,7 +191,7 @@ export default function ImportPatientsExcelModal({ branchId, onClose, onImported
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
-              className="hidden"
+              className="sr-only"
               onClick={notifyFilePickerOpening}
               onChange={handleFile}
               disabled={parsing}

@@ -211,7 +211,7 @@ export default function ImportExcelModal({ branchId, inventory, onClose, onImpor
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
-              className="hidden"
+              className="sr-only"
               onClick={notifyFilePickerOpening}
               onChange={handleFile}
               disabled={parsing}

@@ -67,7 +67,7 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
 
   return (
     <Modal title="Shop details" onClose={onClose}>
-      <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoPick} />
+      <input ref={logoInputRef} type="file" accept="image/*" className="sr-only" onChange={handleLogoPick} />
       <div className="flex flex-col items-center mb-4">
         <button
           onClick={() => {
