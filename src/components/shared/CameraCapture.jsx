@@ -9,7 +9,7 @@ import { useModalBackClose, notifyFilePickerOpening } from "../../hooks/useModal
 // browsers/webviews reclaim that memory and reload the page on return --
 // silently wiping whatever modal/form state was open. Staying inside the
 // page for the whole capture avoids that entirely.
-export default function CameraCapture({ onCapture, onClose, maxDim = 900, quality = 0.8 }) {
+export default function CameraCapture({ onCapture, onClose, maxDim = 1600, quality = 0.85 }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const galleryInputRef = useRef(null);
@@ -25,8 +25,13 @@ export default function CameraCapture({ onCapture, onClose, maxDim = 900, qualit
         return;
       }
       try {
+        // Without explicit resolution constraints, the browser can default
+        // to a much lower-res stream than the phone's camera is actually
+        // capable of -- fine for a single barcode, but nowhere near enough
+        // detail to read a densely packed 30-40 row handwritten table (the
+        // same issue already fixed for the barcode scanner).
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         });
         if (cancelled) {
