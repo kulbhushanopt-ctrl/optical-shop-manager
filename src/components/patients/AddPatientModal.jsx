@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Camera, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, Contact, Loader2, Sparkles, X } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceTextArea, TextInput, PrimaryBtn, ImageLightbox } from "../shared/ui";
 import { calculateAge } from "../../lib/format";
 import { scanPatientIntake } from "../../lib/api";
 import { RX_SCAN_FIELDS, normalizeRxValue } from "../../lib/rxParse";
+import { isContactPickerSupported, pickContact } from "../../lib/contactPicker";
 import CameraCapture from "../shared/CameraCapture";
 
 export default function AddPatientModal({ onClose, onSave, initial, branchId }) {
@@ -76,6 +77,13 @@ export default function AddPatientModal({ onClose, onSave, initial, branchId }) 
       setScanNotice("Couldn't read that photo — please enter the details manually.");
     }
     setScanning(false);
+  };
+
+  const handlePickContact = async () => {
+    const picked = await pickContact();
+    if (!picked) return;
+    if (picked.phone) setPhone(picked.phone);
+    if (!name.trim() && picked.name) setName(picked.name);
   };
 
   const save = () => {
@@ -153,7 +161,19 @@ export default function AddPatientModal({ onClose, onSave, initial, branchId }) 
         <VoiceInput value={name} onChange={setName} placeholder="Jordan Lee" />
       </Field>
       <Field label="Phone">
-        <VoiceInput value={phone} onChange={setPhone} placeholder="+91 98765 43210" />
+        <div className="flex gap-1.5">
+          <div className="flex-1"><VoiceInput value={phone} onChange={setPhone} placeholder="+91 98765 43210" /></div>
+          {isContactPickerSupported() && (
+            <button
+              type="button"
+              onClick={handlePickContact}
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-lensSoft text-lens"
+              aria-label="Pick from contacts"
+            >
+              <Contact size={15} />
+            </button>
+          )}
+        </div>
       </Field>
       <Field label={`Date of birth${dob ? ` (age ${calculateAge(dob)})` : ""}`}>
         <TextInput
