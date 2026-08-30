@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { UserMinus, X } from "lucide-react";
+import { MessageCircle, UserMinus, X } from "lucide-react";
 import { fetchBranchStaff, fetchPendingInvites, inviteStaff, cancelInvite, removeBranchMember } from "../../lib/api";
 import { Modal, Field, TextInput, PrimaryBtn, Spinner } from "../shared/ui";
+import { openWhatsapp } from "../../lib/share";
+import { staffInviteMessage } from "../../lib/messages";
 
 export default function StaffModal({ branchId, branchName, onClose }) {
   const [members, setMembers] = useState([]);
@@ -76,6 +78,10 @@ export default function StaffModal({ branchId, branchName, onClose }) {
             </Field>
             {error && <p className="text-xs text-warn">{error}</p>}
           </form>
+          <p className="text-[10px] text-slate -mt-3 mb-4">
+            After inviting, tap the WhatsApp icon next to their name below to send them a sign-up link — they just need to
+            sign in or sign up with the same email address to get access.
+          </p>
 
           <p className="text-xs font-semibold text-slate mb-2">Members</p>
           <div className="space-y-2 mb-4">
@@ -101,9 +107,18 @@ export default function StaffModal({ branchId, branchName, onClose }) {
                 {invites.map((i) => (
                   <div key={i.id} className="flex items-center justify-between bg-paper rounded-xl px-3 py-2">
                     <div className="text-sm text-ink truncate">{i.email}</div>
-                    <button onClick={() => removeInvite(i.id)} className="text-slate p-1">
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => openWhatsapp(staffInviteMessage({ shopName: branchName, email: i.email }))}
+                        className="text-good p-1"
+                        aria-label="Share invite link via WhatsApp"
+                      >
+                        <MessageCircle size={16} />
+                      </button>
+                      <button onClick={() => removeInvite(i.id)} className="text-slate p-1">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

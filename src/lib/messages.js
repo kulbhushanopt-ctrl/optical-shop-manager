@@ -35,3 +35,12 @@ export function followUpFlagMessage({ shopName, patientName, note }) {
   const name = patientName || "there";
   return `Hi ${name}, this is ${shop} — just a reminder about "${note}". Do drop by whenever it's convenient!`;
 }
+
+// Sent to a newly-invited staff member with the app link and a reminder of
+// exactly which email to sign up with -- the invite only actually takes
+// effect once they sign in/up using that email, so the message spells that
+// out instead of assuming it's obvious.
+export function staffInviteMessage({ shopName, email }) {
+  const shop = shopName || "our shop";
+  return `Hi! You've been invited to join ${shop} on Shop Manager. Open this link and sign in or sign up using this email address (${email}) to get access: https://optical-shop-manager.vercel.app`;
+}
