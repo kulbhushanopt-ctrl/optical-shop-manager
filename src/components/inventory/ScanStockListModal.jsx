@@ -65,7 +65,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         setScanNotice(
           quotaHit
             ? "AI usage limit reached for today — please try again later, or add these items manually for now."
-            : "Couldn't read that photo — please try a clearer shot."
+            : `DEBUG (${result.error}): ${result.message || "no message"}`
         );
       } else {
         // A row with its own SKU already read off the sheet keeps it as-is;
@@ -87,7 +87,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         }
       }
     } catch (err) {
-      setScanNotice("Couldn't read that photo — please try a clearer shot.");
+      setScanNotice(`DEBUG (thrown): ${err?.message || String(err)}`);
     }
     setScanning(false);
   };
