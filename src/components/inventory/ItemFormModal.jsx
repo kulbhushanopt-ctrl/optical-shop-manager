@@ -58,8 +58,8 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
         </Select>
       </Field>
 
-      {f.type === "frame" && (
-        <Field label="Category (optional)">
+      {(f.type === "frame" || f.type === "sunglasses") && (
+        <Field label={f.type === "frame" ? "Category" : "Category (optional)"}>
           <Select value={f.category || ""} onChange={(e) => set("category")(e.target.value)}>
             <option value="">— No category —</option>
             {FRAME_CATEGORIES.map((c) => (

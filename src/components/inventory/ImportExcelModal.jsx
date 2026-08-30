@@ -70,7 +70,7 @@ function parseRows(rawRows, existingInventory) {
   return rawRows.map((row) => {
     const get = (f) => (fieldMap[f] != null ? row[fieldMap[f]] : undefined);
     const type = resolveType(get("type"));
-    const category = type === "frame" ? resolveCategoryValue(get("category")) : "";
+    const category = type === "frame" || type === "sunglasses" ? resolveCategoryValue(get("category")) : "";
     const price = toNumber(get("price"));
     const purchasePrice = toNumber(get("purchasePrice"));
     const stock = toNumber(get("stock"));

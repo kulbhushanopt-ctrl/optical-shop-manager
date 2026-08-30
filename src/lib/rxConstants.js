@@ -95,6 +95,8 @@ export const FRAME_CATEGORIES = [
   { id: "KBX", label: "Kids Boys (Exclusive)" },
   { id: "KG", label: "Kids Girls" },
   { id: "KGX", label: "Kids Girls (Exclusive)" },
+  { id: "SG", label: "Sunglasses" },
+  { id: "NB", label: "Non-Branded" },
 ];
 
 export const frameCategoryLabel = (id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label || id;

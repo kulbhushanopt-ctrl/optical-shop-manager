@@ -219,7 +219,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
                   <TextInput type="number" value={r.quantity} onChange={(e) => updateRow(r.localId, { quantity: e.target.value })} placeholder="Qty" />
                   <TextInput type="number" value={r.price} onChange={(e) => updateRow(r.localId, { price: e.target.value })} placeholder="Price" />
                 </div>
-                {r.type === "frame" && (
+                {(r.type === "frame" || r.type === "sunglasses") && (
                   <div className="grid grid-cols-4 gap-2 items-center mb-2">
                     <div className="col-span-2">
                       <Select value={r.category} onChange={(e) => updateRow(r.localId, { category: e.target.value })}>
@@ -234,7 +234,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
                     </div>
                   </div>
                 )}
-                {r.type === "frame" && r.category && (
+                {(r.type === "frame" || r.type === "sunglasses") && r.category && (
                   <button onClick={() => generateSku(r)} className="text-[11px] font-medium text-lens flex items-center gap-1 mb-2">
                     <Wand2 size={11} /> Generate SKU from category
                   </button>
