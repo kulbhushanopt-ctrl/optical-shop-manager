@@ -4,7 +4,7 @@ import { Upload, Download, CheckCircle2, AlertTriangle, Loader2, RefreshCw } fro
 import { Modal, PrimaryBtn } from "../shared/ui";
 import { notifyFilePickerOpening } from "../../hooks/useModalBackClose";
 import { createInventoryItems, updateInventoryItem } from "../../lib/api";
-import { ITEM_TYPES, FRAME_CATEGORIES, detectCategoryFromText } from "../../lib/rxConstants";
+import { ITEM_TYPES, resolveCategoryValue } from "../../lib/rxConstants";
 import { currency } from "../../lib/format";
 
 const FIELD_ALIASES = {
@@ -22,18 +22,6 @@ const FIELD_ALIASES = {
 
 const TEMPLATE_HEADERS = ["Type", "Category", "Brand", "Model", "SKU", "Purchase Price", "Price", "Stock", "Low Stock At", "HSN Code"];
 const TEMPLATE_SAMPLE = ["Frame", "Gents Metal", "Ray-Ban", "RB2140", "FR-1001", 1200, 2000, 10, 3, "9004"];
-
-// A spreadsheet's Category column is almost always loose text like "ladies
-// sheet" or "gents metal" rather than the exact code ("LS", "GM") the app
-// stores -- match it the same way voice/text commands do. A cell that's
-// already an exact code (any case) is trusted directly first.
-function resolveCategory(raw) {
-  const norm = String(raw ?? "").trim();
-  if (!norm) return "";
-  const byCode = FRAME_CATEGORIES.find((c) => c.id.toLowerCase() === norm.toLowerCase());
-  if (byCode) return byCode.id;
-  return detectCategoryFromText(norm) || "";
-}
 
 function normalizeHeader(h) {
   return String(h ?? "").trim().toLowerCase();
@@ -82,7 +70,7 @@ function parseRows(rawRows, existingInventory) {
   return rawRows.map((row) => {
     const get = (f) => (fieldMap[f] != null ? row[fieldMap[f]] : undefined);
     const type = resolveType(get("type"));
-    const category = type === "frame" ? resolveCategory(get("category")) : "";
+    const category = type === "frame" ? resolveCategoryValue(get("category")) : "";
     const price = toNumber(get("price"));
     const purchasePrice = toNumber(get("purchasePrice"));
     const stock = toNumber(get("stock"));

@@ -3,23 +3,27 @@ import { Camera, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Modal, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 import { scanStockList, createInventoryItems } from "../../lib/api";
-import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku } from "../../lib/rxConstants";
+import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku, resolveCategoryValue } from "../../lib/rxConstants";
 
 // The AI's model-number reading turned out unreliable enough (easy to
 // misread off a tiny engraving) that it's better left blank than wrong --
 // only brand is trusted from the scan; model stays empty for the shopkeeper
-// to type in by hand if/when they want it. When a batch category/price was
-// set up front, they're applied here so every row arrives ready to save.
+// to type in by hand if/when they want it. A per-row category read off the
+// sheet (e.g. a "GMX" column) wins over the shared batch category; the
+// batch category/price only fill in for rows where the AI found nothing.
 function rowFromScan(r, batchCategory, batchPrice) {
+  const category = (r.category ? resolveCategoryValue(r.category) : "") || batchCategory || "";
   return {
     localId: uid(),
     brand: r.brand || "",
     model: "",
-    sku: "",
-    category: batchCategory || "",
+    sku: r.sku ? String(r.sku).trim() : "",
+    category,
     type: "frame",
     quantity: r.quantity != null ? String(r.quantity) : "1",
     price: r.price != null ? String(r.price) : batchPrice || "",
+    purchasePrice: r.purchaseCost != null ? String(r.purchaseCost) : "",
+    hsnCode: r.hsnCode ? String(r.hsnCode).trim() : "",
   };
 }
 
@@ -64,15 +68,16 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
             : "Couldn't read that photo — please try a clearer shot."
         );
       } else {
-        // Each row gets its own SKU under the shared category so a batch of
+        // A row with its own SKU already read off the sheet keeps it as-is;
+        // otherwise it gets the next SKU under its category so a batch of
         // ten frames doesn't all land on the same "LM-001" number.
         const skusSoFar = [];
         const scanned = (result?.rows || []).map((r) => {
           const row = rowFromScan(r, batchCategory, batchPrice);
-          if (batchCategory) {
-            row.sku = suggestNextSku(batchCategory, inventory, skusSoFar);
-            skusSoFar.push(row.sku);
+          if (!row.sku && row.category) {
+            row.sku = suggestNextSku(row.category, inventory, skusSoFar);
           }
+          if (row.sku) skusSoFar.push(row.sku);
           return row;
         });
         if (scanned.length === 0) {
@@ -116,8 +121,10 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         model: r.model.trim(),
         sku: (r.sku || r.model).trim(),
         price: Number(r.price) || 0,
+        purchasePrice: r.purchasePrice ? Number(r.purchasePrice) : null,
         stock: Math.max(1, Number(r.quantity) || 1),
         low: 3,
+        hsnCode: r.hsnCode.trim(),
       }));
       const created = await createInventoryItems(branchId, items);
       onImported(created);
@@ -232,6 +239,19 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
                     <Wand2 size={11} /> Generate SKU from category
                   </button>
                 )}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <TextInput
+                    type="number"
+                    value={r.purchasePrice}
+                    onChange={(e) => updateRow(r.localId, { purchasePrice: e.target.value })}
+                    placeholder="Purchase price (optional)"
+                  />
+                  <TextInput
+                    value={r.hsnCode}
+                    onChange={(e) => updateRow(r.localId, { hsnCode: e.target.value })}
+                    placeholder="HSN code (optional)"
+                  />
+                </div>
                 {!r.brand.trim() ? (
                   <p className="text-[10px] text-warn mt-1.5">Brand is required to add this row.</p>
                 ) : !r.price.trim() ? (

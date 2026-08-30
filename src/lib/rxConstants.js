@@ -126,6 +126,17 @@ export function detectCategoryFromText(text) {
   return best;
 }
 
+// A cell/field's category text is often an exact code already ("GMX",
+// any case) rather than a full phrase -- try that first, then fall back to
+// the loose free-text match above.
+export function resolveCategoryValue(raw) {
+  const norm = String(raw ?? "").trim();
+  if (!norm) return "";
+  const byCode = FRAME_CATEGORIES.find((c) => c.id.toLowerCase() === norm.toLowerCase());
+  if (byCode) return byCode.id;
+  return detectCategoryFromText(norm) || "";
+}
+
 const SKU_PREFIXES = { frame: "FR", sunglasses: "SG", lens: "LN", contact: "CL", accessory: "AC" };
 
 // Finds the highest existing "<prefix>-<number>" SKU for this item type (or
