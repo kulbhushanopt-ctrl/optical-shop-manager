@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import UpdateBanner from "./components/UpdateBanner.jsx";
 import "./index.css";
 import { reloadOnStaleChunk } from "./lib/staleChunkRecovery";
 
@@ -20,5 +21,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
+    <UpdateBanner />
   </React.StrictMode>
 );
