@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search } from "lucide-react";
 import {
   createInventoryItem,
   createInventoryItems,
@@ -47,6 +47,7 @@ function ItemIcon({ type }) {
 
 export default function InventoryTab({ inventory, setInventory, branchId, isOwner, shopName }) {
   const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [error, setError] = useState("");
@@ -57,7 +58,16 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [showTextAdd, setShowTextAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
 
-  const filtered = inventory.filter((i) => filter === "all" || i.type === filter);
+  const q = query.trim().toLowerCase();
+  const filtered = inventory.filter((i) => {
+    if (filter !== "all" && i.type !== filter) return false;
+    if (!q) return true;
+    return (
+      (i.brand || "").toLowerCase().includes(q) ||
+      (i.model || "").toLowerCase().includes(q) ||
+      (i.sku || "").toLowerCase().includes(q)
+    );
+  });
 
   const addItem = async (data) => {
     try {
@@ -186,6 +196,17 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
           <p className="text-xs rounded-lg px-3 py-2 text-warn bg-warnSoft">{error}</p>
         </div>
       )}
+      <div className="px-5 mb-3">
+        <div className="rounded-xl px-3 py-2 flex items-center gap-2 bg-card border border-border">
+          <Search size={15} className="text-slate" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by brand, model, or SKU…"
+            className="flex-1 outline-none text-sm bg-transparent text-ink"
+          />
+        </div>
+      </div>
       <div className="px-5 flex gap-2 mb-3 overflow-x-auto">
         {[{ id: "all", label: "All" }, ...ITEM_TYPES].map((f) => (
           <button
@@ -201,11 +222,15 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={Package}
-          title="No stock items"
-          subtitle={isOwner ? "Add frames and lenses to track inventory and pricing." : "No items have been added to this branch yet."}
-        />
+        inventory.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title="No stock items"
+            subtitle={isOwner ? "Add frames and lenses to track inventory and pricing." : "No items have been added to this branch yet."}
+          />
+        ) : (
+          <EmptyState icon={Search} title="No matching items" subtitle="Try a different search term or filter." />
+        )
       ) : (
         <div className="px-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => {
