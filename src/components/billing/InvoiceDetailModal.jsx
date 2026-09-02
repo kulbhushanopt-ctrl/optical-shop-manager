@@ -10,7 +10,6 @@ const UpiQrModal = lazy(() => import("./UpiQrModal"));
 import {
   currency,
   formatDate,
-  statusTone,
   ORDER_STATUSES,
   orderStatusLabel,
   orderStatusTone,
@@ -31,7 +30,7 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
   const grossTotal = invoice.items.reduce((s, l) => s + l.price * l.qty, 0);
   const totalDiscount = invoice.items.reduce((s, l) => s + (l.discount || 0), 0);
   const rx = invoice.prescription;
-  const tone = statusTone(invoice.status);
+  const orderTone = orderStatusTone(invoice.orderStatus);
 
   const gstGroups = useMemo(
     () =>
@@ -76,7 +75,7 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
     `Total: ${currency(invoice.total)}\n` +
     `Amount paid: ${currency(invoice.amountPaid || 0)}\n` +
     `Balance left: ${currency(balanceLeft)}\n` +
-    `Status: ${invoice.status.toUpperCase()}`;
+    `Order status: ${orderStatusLabel(invoice.orderStatus)}`;
 
   return (
     <Modal title={`Invoice · ${invoice.patientName}`} onClose={onClose} wide>
@@ -131,24 +130,26 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
       )}
 
       <div id="print-area" ref={invoiceRef} className="bg-card border-[1.5px] border-border rounded-2xl p-5">
-        <div className="border-b-2 border-ink pb-3 mb-3.5 flex items-center gap-3">
-          <div className="bg-focus rounded-full w-[34px] h-[34px] flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {shopInfo?.logo ? (
-              <img src={shopInfo.logo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <Glasses size={16} className="text-ink" strokeWidth={2.4} />
-            )}
-          </div>
+        <div className="border-b-2 border-ink pb-3 mb-3.5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <div>
             <p className="font-display text-sm font-bold text-ink leading-tight">{shopInfo?.name || "Optical Shop"}</p>
-            <p className="text-[10px] uppercase tracking-wide text-slate">Tax Invoice</p>
             {shopInfo?.address && <p className="text-[10px] mt-0.5 max-w-[200px] text-slate">{shopInfo.address}</p>}
             {shopInfo?.phone && <p className="text-[10px] text-slate">Ph: {shopInfo.phone}</p>}
             {shopInfo?.gstin && <p className="text-[10px] text-slate">GSTIN: {shopInfo.gstin}</p>}
           </div>
+          <p className="text-center text-[10px] font-bold uppercase tracking-wide text-ink whitespace-nowrap">Tax Invoice</p>
+          <div className="flex justify-end">
+            <div className="bg-focus rounded-full w-[34px] h-[34px] flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {shopInfo?.logo ? (
+                <img src={shopInfo.logo} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Glasses size={16} className="text-ink" strokeWidth={2.4} />
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-[10px] uppercase tracking-wide text-slate">Customer</p>
             <p className="font-display text-sm font-semibold text-ink">{invoice.patientName}</p>
@@ -287,7 +288,9 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
           <span className={`text-lg font-semibold font-mono ${balanceLeft > 0 ? "text-warn" : "text-good"}`}>{currency(balanceLeft)}</span>
         </div>
 
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${tone.text} ${tone.bg}`}>{invoice.status}</span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${orderTone.text} ${orderTone.bg}`}>
+          {orderStatusLabel(invoice.orderStatus)}
+        </span>
 
         {invoice.gstRate > 0 && gstGroups.length > 0 && (
           <div className="border-t border-dashed border-border pt-3 mt-3.5">
@@ -312,11 +315,11 @@ export default function InvoiceDetailModal({ invoice, payments, onClose, onRecor
         )}
 
         <div className="border-t border-dashed border-border pt-3.5 mt-3.5 flex items-end justify-between">
-          <div>
-            <div className="border-b border-slate w-[130px] h-[22px]" />
+          <p className="text-[9px] max-w-[140px] text-slate">This is a computer generated document.</p>
+          <div className="text-right">
+            <div className="border-b border-slate w-[130px] h-[22px] ml-auto" />
             <p className="text-[10px] mt-1 text-slate">Authorised signature</p>
           </div>
-          <p className="text-[9px] text-right max-w-[140px] text-slate">This is a computer generated document.</p>
         </div>
       </div>
 

@@ -13,6 +13,13 @@ const BarcodeScanner = lazy(() => import("../shared/BarcodeScanner"));
 const CONTACT_DURATIONS = ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
 const CONTACT_TYPES = ["Spherical", "Toric", "Multifocal"];
 
+// Pre-fills HSN code by item type so it doesn't have to be typed by hand
+// every time -- only for the two codes this shop has actually been using
+// consistently (9004, for both eyeglass frames and sunglasses); lens,
+// contact, and accessory are left blank rather than guessing a tax code
+// without confirmation. Never overwrites a value that's already there.
+const HSN_DEFAULTS = { frame: "9004", sunglasses: "9004" };
+
 const ITEM_PLACEHOLDERS = {
   frame: { brand: "Ray-Ban", model: "RB2140", sku: "FR-1001" },
   sunglasses: { brand: "Oakley", model: "Holbrook", sku: "SG-1001" },
@@ -51,7 +58,13 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
         optional and can be filled in later.
       </p>
       <Field label="Type">
-        <Select value={f.type} onChange={(e) => set("type")(e.target.value)}>
+        <Select
+          value={f.type}
+          onChange={(e) => {
+            const type = e.target.value;
+            setF((prev) => ({ ...prev, type, hsnCode: prev.hsnCode || HSN_DEFAULTS[type] || prev.hsnCode }));
+          }}
+        >
           {ITEM_TYPES.map((t) => (
             <option key={t.id} value={t.id}>{t.label}</option>
           ))}
