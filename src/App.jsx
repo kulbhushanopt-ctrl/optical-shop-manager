@@ -127,20 +127,24 @@ export default function OpticalShopApp() {
   );
 }
 
-// On some installed (home-screen) Android PWAs, opening a native file
-// picker -- Excel import, the shop logo, a camera gallery-fallback -- makes
-// the OS reclaim the backgrounded app and Chrome reloads it fresh once the
-// picker closes, wiping all in-memory state including which tab was open.
-// That can't be prevented from here, but landing back on whatever tab you
-// were actually using (instead of always Home) makes the reload far less
-// disorienting -- so the active tab is mirrored to sessionStorage and
-// restored on mount.
+// Some Android OEM skins (Vivo/Oppo/Xiaomi in particular) are far more
+// aggressive than stock Android about killing a backgrounded installed
+// PWA to reclaim memory -- not just for a native file picker, but for
+// switching to another app, or sometimes even the screen just dimming.
+// Chrome then reloads the page fresh on return, wiping all in-memory
+// state including which tab was open. That reload itself can't be
+// prevented from here, but landing back on whatever tab you were using
+// (instead of always Home) makes it far less disorienting. localStorage
+// (not sessionStorage) is used specifically because this kind of
+// OS-level process kill can also tear down session storage on some of
+// these skins -- localStorage survives that reliably, same as the login
+// session already does.
 const ACTIVE_TAB_KEY = "optishop_active_tab";
 
 function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, onBranchUpdated }) {
   const [tab, setTabState] = useState(() => {
     try {
-      return sessionStorage.getItem(ACTIVE_TAB_KEY) || "home";
+      return localStorage.getItem(ACTIVE_TAB_KEY) || "home";
     } catch {
       return "home";
     }
@@ -148,9 +152,9 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const setTab = (t) => {
     setTabState(t);
     try {
-      sessionStorage.setItem(ACTIVE_TAB_KEY, t);
+      localStorage.setItem(ACTIVE_TAB_KEY, t);
     } catch {
-      /* sessionStorage unavailable -- tab just won't survive a reload */
+      /* localStorage unavailable -- tab just won't survive a reload */
     }
   };
   const [loading, setLoading] = useState(true);
