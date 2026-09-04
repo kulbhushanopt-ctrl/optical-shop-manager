@@ -215,10 +215,10 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   ];
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-paper md:bg-ink/[0.03] font-sans">
-      <div className="w-full max-w-md md:max-w-5xl xl:max-w-6xl min-h-screen flex relative md:shadow-xl md:shadow-black/5">
+    <div className="h-dvh w-full flex justify-center bg-paper md:bg-ink/[0.03] font-sans overflow-hidden">
+      <div className="w-full max-w-md md:max-w-5xl xl:max-w-6xl h-full flex relative md:shadow-xl md:shadow-black/5">
         <Sidebar tabs={tabs} active={tab} onChange={setTab} shopInfo={branch} />
-        <div className="flex-1 min-w-0 flex flex-col relative bg-paper">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col relative bg-paper">
           <TopBar
             shopInfo={branch}
             onBranchUpdated={onBranchUpdated}
@@ -228,7 +228,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
             onSwitchBranch={onSwitchBranch}
             onBranchCreated={onBranchCreated}
           />
-          <div className="flex-1 overflow-y-auto pb-24 md:pb-6" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-6" style={{ WebkitOverflowScrolling: "touch" }}>
             {tab === "home" && <HomeTab patients={patients} inventory={inventory} invoices={invoices} appointments={appointments} setTab={setTab} />}
             {tab === "patients" && (
               <PatientsTab
