@@ -64,13 +64,13 @@ function findMatch(item, existingInventory) {
   return existingInventory.find((inv) => inv.type === item.type && (inv.sku || "").trim().toLowerCase() === sku) || null;
 }
 
-function parseRows(rawRows, existingInventory) {
+function parseRows(rawRows, existingInventory, categories) {
   if (!rawRows.length) return [];
   const fieldMap = buildFieldMap(Object.keys(rawRows[0]));
   return rawRows.map((row) => {
     const get = (f) => (fieldMap[f] != null ? row[fieldMap[f]] : undefined);
     const type = resolveType(get("type"));
-    const category = type === "frame" || type === "sunglasses" ? resolveCategoryValue(get("category")) : "";
+    const category = type === "frame" || type === "sunglasses" ? resolveCategoryValue(get("category"), categories) : "";
     const price = toNumber(get("price"));
     const purchasePrice = toNumber(get("purchasePrice"));
     const stock = toNumber(get("stock"));
@@ -99,7 +99,7 @@ function parseRows(rawRows, existingInventory) {
   });
 }
 
-export default function ImportExcelModal({ branchId, inventory, onClose, onImported }) {
+export default function ImportExcelModal({ branchId, inventory, categories, onClose, onImported }) {
   const [rows, setRows] = useState(null);
   const [fileName, setFileName] = useState("");
   const [parsing, setParsing] = useState(false);
@@ -121,7 +121,7 @@ export default function ImportExcelModal({ branchId, inventory, onClose, onImpor
         if (!rawRows.length) {
           setError("That file doesn't have any data rows.");
         } else {
-          setRows(parseRows(rawRows, inventory));
+          setRows(parseRows(rawRows, inventory, categories));
           setFileName(file.name);
         }
       } catch (err) {

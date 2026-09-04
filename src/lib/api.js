@@ -532,8 +532,12 @@ async function invokeAiFunction(name, body) {
 // stock list via the scan-stock-list Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function scanStockList(imageDataUrl, branchId) {
-  return invokeAiFunction("scan-stock-list", { image: imageDataUrl, branchId });
+export async function scanStockList(imageDataUrl, branchId, categories) {
+  return invokeAiFunction("scan-stock-list", {
+    image: imageDataUrl,
+    branchId,
+    categories: (categories || []).map((c) => ({ code: c.id, label: c.label })),
+  });
 }
 
 /* ---------- AI voice-command inventory entry ---------- */
@@ -541,8 +545,12 @@ export async function scanStockList(imageDataUrl, branchId) {
 // via the parse-inventory-command Edge Function. Returns
 // { error: "not_configured", message } until a GEMINI_API_KEY secret is set
 // on the Supabase project -- that's a normal, expected response.
-export async function parseInventoryCommand(text, branchId) {
-  return invokeAiFunction("parse-inventory-command", { text, branchId });
+export async function parseInventoryCommand(text, branchId, categories) {
+  return invokeAiFunction("parse-inventory-command", {
+    text,
+    branchId,
+    categories: (categories || []).map((c) => ({ code: c.id, label: c.label })),
+  });
 }
 
 /* ---------- AI prescription scan ---------- */
@@ -594,4 +602,54 @@ export async function hasBranchGeminiKey(branchId) {
   const { data, error } = await supabase.rpc("has_branch_gemini_key", { p_branch_id: branchId });
   if (error) throw error;
   return !!data;
+}
+
+/* ---------- Branch categories (editable frame category list) ---------- */
+// Each branch has its own list of category codes (e.g. "GM" / "Gents
+// Metal") instead of one fixed list shared by every shop -- these double
+// as SKU prefixes the same way the old hardcoded list did.
+// `id` here is the short code ("GM") -- every existing category consumer
+// (SKU prefixes, the category picker, AI matching) already expects that
+// shape from the old hardcoded FRAME_CATEGORIES list, so this keeps all of
+// that working unchanged regardless of where the list now comes from.
+// `dbId` (the row's real UUID) is only needed by the categories management
+// screen itself, to target a specific row for update/delete.
+function branchCategoryFromDb(row) {
+  return { dbId: row.id, id: row.code, label: row.label, sortOrder: row.sort_order };
+}
+
+export async function fetchBranchCategories(branchId) {
+  const { data, error } = await supabase
+    .from("branch_categories")
+    .select("id,code,label,sort_order")
+    .eq("branch_id", branchId)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return data.map(branchCategoryFromDb);
+}
+
+export async function createBranchCategory(branchId, { code, label, sortOrder }) {
+  const { data, error } = await supabase
+    .from("branch_categories")
+    .insert({ branch_id: branchId, code: code.trim().toUpperCase(), label: label.trim(), sort_order: sortOrder ?? 0 })
+    .select("id,code,label,sort_order")
+    .single();
+  if (error) throw error;
+  return branchCategoryFromDb(data);
+}
+
+export async function updateBranchCategory(id, { code, label }) {
+  const { data, error } = await supabase
+    .from("branch_categories")
+    .update({ code: code.trim().toUpperCase(), label: label.trim() })
+    .eq("id", id)
+    .select("id,code,label,sort_order")
+    .single();
+  if (error) throw error;
+  return branchCategoryFromDb(data);
+}
+
+export async function deleteBranchCategory(id) {
+  const { error } = await supabase.from("branch_categories").delete().eq("id", id);
+  if (error) throw error;
 }

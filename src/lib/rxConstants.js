@@ -80,6 +80,13 @@ export const uid = () => Math.random().toString(36).slice(2, 10);
 // more specific SKU prefix than the broad "FR" every frame otherwise shares
 // (e.g. "LM" for Ladies Metal, "GSX" for Gents Sheet Exclusive). The
 // category id doubles as its SKU prefix.
+//
+// This is now only the STARTER set a new branch is seeded with (and the
+// fallback if a branch's own list fails to load) -- each branch has its
+// own editable list in the branch_categories table (see api.js
+// fetchBranchCategories), fetched once per branch and passed down as
+// `categories` through Inventory's components instead of importing this
+// constant directly. It's kept exported for that fallback/seed role only.
 export const FRAME_CATEGORIES = [
   { id: "LM", label: "Ladies Metal" },
   { id: "LMX", label: "Ladies Metal (Exclusive)" },
@@ -98,7 +105,7 @@ export const FRAME_CATEGORIES = [
   { id: "SG", label: "Sunglasses" },
 ];
 
-export const frameCategoryLabel = (id) => FRAME_CATEGORIES.find((c) => c.id === id)?.label || id;
+export const frameCategoryLabel = (id, categories = FRAME_CATEGORIES) => categories.find((c) => c.id === id)?.label || id;
 
 // Free-text category detection -- shared by voice/text commands and Excel
 // import, since neither can rely on getting an exact category code like
@@ -113,11 +120,14 @@ export function normalizeSpeechForCategory(text) {
     .replace(/\bladys?\b/g, "ladies");
 }
 
-export function detectCategoryFromText(text) {
+// `categories` defaults to the starter set so callers that haven't been
+// updated (or that run before a branch's own list has loaded) still work,
+// but every real call site passes the branch's own live list.
+export function detectCategoryFromText(text, categories = FRAME_CATEGORIES) {
   const norm = normalizeSpeechForCategory(text);
   let best = null;
   let bestWordCount = 0;
-  for (const cat of FRAME_CATEGORIES) {
+  for (const cat of categories) {
     const words = cat.label.toLowerCase().replace(/[()]/g, "").split(/\s+/).filter(Boolean);
     if (words.every((w) => norm.includes(w)) && words.length > bestWordCount) {
       best = cat.id;
@@ -130,12 +140,12 @@ export function detectCategoryFromText(text) {
 // A cell/field's category text is often an exact code already ("GMX",
 // any case) rather than a full phrase -- try that first, then fall back to
 // the loose free-text match above.
-export function resolveCategoryValue(raw) {
+export function resolveCategoryValue(raw, categories = FRAME_CATEGORIES) {
   const norm = String(raw ?? "").trim();
   if (!norm) return "";
-  const byCode = FRAME_CATEGORIES.find((c) => c.id.toLowerCase() === norm.toLowerCase());
+  const byCode = categories.find((c) => c.id.toLowerCase() === norm.toLowerCase());
   if (byCode) return byCode.id;
-  return detectCategoryFromText(norm) || "";
+  return detectCategoryFromText(norm, categories) || "";
 }
 
 const SKU_PREFIXES = { frame: "FR", sunglasses: "SG", lens: "LN", contact: "CL", accessory: "AC" };

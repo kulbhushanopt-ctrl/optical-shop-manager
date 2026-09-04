@@ -3,7 +3,7 @@ import { Camera, Loader2, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Modal, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import CameraCapture from "../shared/CameraCapture";
 import { scanStockList, createInventoryItems } from "../../lib/api";
-import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku, resolveCategoryValue } from "../../lib/rxConstants";
+import { ITEM_TYPES, uid, suggestNextSku, resolveCategoryValue } from "../../lib/rxConstants";
 
 // The AI's model-number reading turned out unreliable enough (easy to
 // misread off a tiny engraving) that it's better left blank than wrong --
@@ -11,8 +11,8 @@ import { ITEM_TYPES, FRAME_CATEGORIES, uid, suggestNextSku, resolveCategoryValue
 // to type in by hand if/when they want it. A per-row category read off the
 // sheet (e.g. a "GMX" column) wins over the shared batch category; the
 // batch category/price only fill in for rows where the AI found nothing.
-function rowFromScan(r, batchCategory, batchPrice) {
-  const category = (r.category ? resolveCategoryValue(r.category) : "") || batchCategory || "";
+function rowFromScan(r, batchCategory, batchPrice, categories) {
+  const category = (r.category ? resolveCategoryValue(r.category, categories) : "") || batchCategory || "";
   return {
     localId: uid(),
     brand: r.brand || "",
@@ -27,7 +27,7 @@ function rowFromScan(r, batchCategory, batchPrice) {
   };
 }
 
-export default function ScanStockListModal({ branchId, inventory, onClose, onImported }) {
+export default function ScanStockListModal({ branchId, inventory, categories, onClose, onImported }) {
   const [showCamera, setShowCamera] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [batchCategory, setBatchCategory] = useState("");
@@ -53,7 +53,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
     setScanning(true);
     setScanNotice("");
     try {
-      const result = await scanStockList(photo, branchId);
+      const result = await scanStockList(photo, branchId, categories);
       if (result?.error === "not_configured") {
         setScanNotice(result.message || "AI stock-list scanning isn't set up yet.");
       } else if (result?.error) {
@@ -73,7 +73,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
         // ten frames doesn't all land on the same "LM-001" number.
         const skusSoFar = [];
         const scanned = (result?.rows || []).map((r) => {
-          const row = rowFromScan(r, batchCategory, batchPrice);
+          const row = rowFromScan(r, batchCategory, batchPrice, categories);
           if (!row.sku && row.category) {
             row.sku = suggestNextSku(row.category, inventory, skusSoFar);
           }
@@ -146,7 +146,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
             <div className="mb-3">
               <Select value={batchCategory} onChange={(e) => setBatchCategory(e.target.value)}>
                 <option value="">— No category —</option>
-                {FRAME_CATEGORIES.map((c) => (
+                {(categories || []).map((c) => (
                   <option key={c.id} value={c.id}>{c.label}</option>
                 ))}
               </Select>
@@ -224,7 +224,7 @@ export default function ScanStockListModal({ branchId, inventory, onClose, onImp
                     <div className="col-span-2">
                       <Select value={r.category} onChange={(e) => updateRow(r.localId, { category: e.target.value })}>
                         <option value="">— No category —</option>
-                        {FRAME_CATEGORIES.map((c) => (
+                        {(categories || []).map((c) => (
                           <option key={c.id} value={c.id}>{c.label}</option>
                         ))}
                       </Select>

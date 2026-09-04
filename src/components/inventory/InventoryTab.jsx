@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search, Tags } from "lucide-react";
 import {
   createInventoryItem,
   createInventoryItems,
@@ -10,13 +10,14 @@ import {
 } from "../../lib/api";
 import { SectionHeader, RoundIconBtn, EmptyState } from "../shared/ui";
 import { currency } from "../../lib/format";
-import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku, FRAME_CATEGORIES, detectCategoryFromText } from "../../lib/rxConstants";
+import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku, detectCategoryFromText } from "../../lib/rxConstants";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import ItemFormModal from "./ItemFormModal";
 import ImportExcelModal from "./ImportExcelModal";
 import ScanStockListModal from "./ScanStockListModal";
 import TextCommandModal from "./TextCommandModal";
 import PrintLabelsModal from "./PrintLabelsModal";
+import CategoriesModal from "./CategoriesModal";
 
 // A single spoken number is either how many units of ONE named item to
 // stock, or how many SEPARATE un-named items to create -- never both (see
@@ -45,7 +46,7 @@ function ItemIcon({ type }) {
   return <Eye size={16} className="text-lens" />;
 }
 
-export default function InventoryTab({ inventory, setInventory, branchId, isOwner, shopName }) {
+export default function InventoryTab({ inventory, setInventory, categories, setCategories, branchId, isOwner, shopName }) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -57,6 +58,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   const [showScanList, setShowScanList] = useState(false);
   const [showTextAdd, setShowTextAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
 
   const q = query.trim().toLowerCase();
   const filtered = inventory.filter((i) => {
@@ -87,14 +89,14 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
   // sentence turned into a prefilled item, or an error message to show.
   const runCommand = async (text) => {
     try {
-      const result = await parseInventoryCommand(text, branchId);
+      const result = await parseInventoryCommand(text, branchId, categories);
       if (result?.error === "not_configured") {
         return result.message || "AI entry isn't set up yet.";
       }
       if (result?.error) {
         return "Didn't catch that — please try again or add the item manually.";
       }
-      const category = result.category || detectCategoryFromText(text) || "";
+      const category = result.category || detectCategoryFromText(text, categories) || "";
       const qty = Math.max(0, Math.min(100, Number(result.quantity) || 0));
       if (qty > 1) {
         // "Twenty frames of gents metal" (no brand named) or "Giovani 11
@@ -160,6 +162,9 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         action={
           isOwner ? (
             <div className="flex items-center gap-2">
+              <RoundIconBtn onClick={() => setShowCategories(true)}>
+                <Tags size={15} />
+              </RoundIconBtn>
               <RoundIconBtn onClick={() => setShowLabels(true)}>
                 <Barcode size={15} />
               </RoundIconBtn>
@@ -255,7 +260,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
                     {item.brand} {item.model}
                   </p>
                   <p className="text-[11px] truncate text-slate font-mono">
-                    {item.category ? frameCategoryLabel(item.category) : itemTypeLabel(item.type)} · {item.sku} · {currency(item.price)}
+                    {item.category ? frameCategoryLabel(item.category, categories) : itemTypeLabel(item.type)} · {item.sku} · {currency(item.price)}
                     {item.type === "lens" && item.power && ` · ${item.power}${item.addPower ? ` / ${item.addPower}` : ""}`}
                     {item.type === "contact" && item.power && ` · ${item.power}`}
                     {item.type === "contact" && item.baseCurve && ` · BC ${item.baseCurve}`}
@@ -276,6 +281,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         <ItemFormModal
           title="Add stock item"
           inventory={inventory}
+          categories={categories}
           branchId={branchId}
           onClose={() => setShowAdd(false)}
           onSave={addItem}
@@ -286,13 +292,23 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         />
       )}
       {isOwner && editItem && (
-        <ItemFormModal title="Edit item" initial={editItem} inventory={inventory} branchId={branchId} onClose={() => setEditItem(null)} onSave={saveEdit} onDelete={() => removeItem(editItem.id)} />
+        <ItemFormModal
+          title="Edit item"
+          initial={editItem}
+          inventory={inventory}
+          categories={categories}
+          branchId={branchId}
+          onClose={() => setEditItem(null)}
+          onSave={saveEdit}
+          onDelete={() => removeItem(editItem.id)}
+        />
       )}
       {isOwner && voiceDraft && (
         <ItemFormModal
           title="Add stock item"
           initial={voiceDraft}
           inventory={inventory}
+          categories={categories}
           branchId={branchId}
           onClose={() => setVoiceDraft(null)}
           onSave={addItem}
@@ -306,6 +322,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         <ImportExcelModal
           branchId={branchId}
           inventory={inventory}
+          categories={categories}
           onClose={() => setShowImport(false)}
           onImported={({ created, updated }) => {
             const updatedIds = new Set(updated.map((u) => u.id));
@@ -318,6 +335,7 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         <ScanStockListModal
           branchId={branchId}
           inventory={inventory}
+          categories={categories}
           onClose={() => setShowScanList(false)}
           onImported={(created) => {
             setInventory([...created, ...inventory]);
@@ -336,7 +354,15 @@ export default function InventoryTab({ inventory, setInventory, branchId, isOwne
         />
       )}
       {isOwner && showLabels && (
-        <PrintLabelsModal inventory={inventory} shopName={shopName} branchId={branchId} onClose={() => setShowLabels(false)} />
+        <PrintLabelsModal inventory={inventory} categories={categories} shopName={shopName} branchId={branchId} onClose={() => setShowLabels(false)} />
+      )}
+      {isOwner && showCategories && (
+        <CategoriesModal
+          branchId={branchId}
+          categories={categories}
+          setCategories={setCategories}
+          onClose={() => setShowCategories(false)}
+        />
       )}
     </div>
   );

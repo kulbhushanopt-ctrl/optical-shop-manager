@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState } from "react";
 import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
-import { ITEM_TYPES, LENS_INDEXES, COATINGS, FRAME_CATEGORIES, suggestNextSku } from "../../lib/rxConstants";
+import { ITEM_TYPES, LENS_INDEXES, COATINGS, suggestNextSku } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
 import { fetchLabelReservation } from "../../lib/api";
 
@@ -34,7 +34,7 @@ const BLANK_ITEM = {
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
 };
 
-export default function ItemFormModal({ title, initial, inventory, branchId, onClose, onSave, onDelete, onFoundExisting }) {
+export default function ItemFormModal({ title, initial, inventory, categories, branchId, onClose, onSave, onDelete, onFoundExisting }) {
   // `initial` may be a full existing item (editing) or a partial AI-parsed
   // prefill (voice add) -- merge over blank defaults either way so missing
   // fields (e.g. `low`, `coatings`) don't end up undefined.
@@ -75,7 +75,7 @@ export default function ItemFormModal({ title, initial, inventory, branchId, onC
         <Field label={f.type === "frame" ? "Category" : "Category (optional)"}>
           <Select value={f.category || ""} onChange={(e) => set("category")(e.target.value)}>
             <option value="">— No category —</option>
-            {FRAME_CATEGORIES.map((c) => (
+            {(categories || []).map((c) => (
               <option key={c.id} value={c.id}>{c.label}</option>
             ))}
           </Select>

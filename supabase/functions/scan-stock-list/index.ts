@@ -69,7 +69,34 @@ async function resolveGeminiKey(branchId: string | null | undefined, authHeader:
   }
 }
 
-const PROMPT = `You are reading a photo related to eyewear frame stock for an optical shop. It is ONE of two kinds of photo -- figure out which and read it accordingly:
+// A shop's own category list (see branch_categories / CategoriesModal) is
+// sent from the frontend with every request, since it already has that
+// list loaded -- avoids a second DB round trip from inside this function.
+// Falls back to the app's original starter set for any caller that
+// doesn't send one (an old cached frontend, or a branch with an empty
+// list for some reason) so this never just breaks.
+const DEFAULT_CATEGORIES = [
+  { code: "LM", label: "Ladies Metal" },
+  { code: "LMX", label: "Ladies Metal (Exclusive)" },
+  { code: "LS", label: "Ladies Sheet" },
+  { code: "LSX", label: "Ladies Sheet (Exclusive)" },
+  { code: "LF", label: "Ladies Frameless" },
+  { code: "GM", label: "Gents Metal" },
+  { code: "GMX", label: "Gents Metal (Exclusive)" },
+  { code: "GS", label: "Gents Sheet" },
+  { code: "GSX", label: "Gents Sheet (Exclusive)" },
+  { code: "GF", label: "Gents Frameless" },
+  { code: "KB", label: "Kids Boys" },
+  { code: "KBX", label: "Kids Boys (Exclusive)" },
+  { code: "KG", label: "Kids Girls" },
+  { code: "KGX", label: "Kids Girls (Exclusive)" },
+  { code: "SG", label: "Sunglasses" },
+];
+
+function buildPrompt(categories: { code: string; label: string }[]): string {
+  const list = categories.length ? categories : DEFAULT_CATEGORIES;
+  const categoryDescription = list.map((c) => `"${c.code}" (${c.label})`).join(", ");
+  return `You are reading a photo related to eyewear frame stock for an optical shop. It is ONE of two kinds of photo -- figure out which and read it accordingly:
 
 1. A handwritten or printed stock/packing list: a numbered list or table, one frame per row, with a brand/label name (e.g. "Visage", "Tom Ford", "Vogue", "Walnut PRO"), and often a frame category, model/style code, SKU, HSN code, purchase price, and/or selling price as separate columns -- exactly which columns are present varies sheet to sheet, and a model or style code is frequently left blank when the shop hasn't assigned one yet.
 
@@ -77,7 +104,7 @@ const PROMPT = `You are reading a photo related to eyewear frame stock for an op
 
 Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"rows": [{"brand": string, "category": string|null, "model": string, "sku": string|null, "hsnCode": string|null, "purchaseCost": number|null, "quantity": number|null, "price": number|null}]}.
 - "brand" is the label/brand name text -- this is the only field a row absolutely needs; never guess or invent one that isn't actually legible, and skip a row entirely if you can't make out its brand, but a missing/blank model, category, SKU, HSN, or price is normal and should NOT cause you to skip the row. If the Brand column/cell for a row literally says something like "NB", "non-branded", "unbranded", "local", or "no brand", use "Non-Branded" as the brand rather than trying to treat it as a category.
-- "category" is the closest match among these category codes, based on gender + material + tier text/column on that row (e.g. "GMX", "gents metal exclusive", "ladies sheet", "sunglasses" -> the matching code below); use null if no such column/text is present for that row: "LM" (Ladies Metal), "LMX" (Ladies Metal Exclusive), "LS" (Ladies Sheet), "LSX" (Ladies Sheet Exclusive), "LF" (Ladies Frameless), "GM" (Gents Metal), "GMX" (Gents Metal Exclusive), "GS" (Gents Sheet), "GSX" (Gents Sheet Exclusive), "GF" (Gents Frameless), "KB" (Kids Boys), "KBX" (Kids Boys Exclusive), "KG" (Kids Girls), "KGX" (Kids Girls Exclusive), "SG" (Sunglasses).
+- "category" is the closest match among this shop's own category codes, based on gender/material/tier/style text or column on that row (e.g. "GMX", "gents metal exclusive", "ladies sheet", "sunglasses" -> the matching code): ${categoryDescription}. Use null if no such column/text is present for that row.
 - "model" is the style/reference code exactly as written (keep letters, digits, and dashes, e.g. "FT5663-B") if a Model column/value exists for that row, else null -- for a physical-frame photo this is the model/style code engraved on the temple; the size code (like "54-17-140"), if present, is a separate measurement and must NOT be included in model.
 - "sku" is a value from an explicit SKU or Code column, if present, else null.
 - "hsnCode" is a value from an explicit HSN or HSN Code column, if present, else null.
@@ -85,16 +112,19 @@ Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly th
 - "quantity" is a plain integer if a quantity is written for that row on a LIST (do not assume 1 there); for a photo of physical frames, leave quantity null (each row already represents exactly one physical frame).
 - "price" is a plain number (no currency symbol) from the selling price / MRP / Price column, if present or visible, else null -- when both a purchase price and a selling price/MRP column exist, "price" is always the selling price/MRP one, never the purchase price.
 For a list, skip the header row (e.g. "Model", "Quantity") if present.`;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   let image: string | undefined;
   let branchId: string | undefined;
+  let categories: { code: string; label: string }[] = [];
   try {
     const body = await req.json();
     image = body?.image;
     branchId = body?.branchId;
+    categories = Array.isArray(body?.categories) ? body.categories : [];
   } catch {
     return json({ error: "bad_request", message: "Expected JSON body with an `image` field." }, 400);
   }
@@ -121,7 +151,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: PROMPT }, { inline_data: { mime_type: "image/jpeg", data: base64 } }],
+              parts: [{ text: buildPrompt(categories) }, { inline_data: { mime_type: "image/jpeg", data: base64 } }],
             },
           ],
           generationConfig: { temperature: 0, responseMimeType: "application/json" },

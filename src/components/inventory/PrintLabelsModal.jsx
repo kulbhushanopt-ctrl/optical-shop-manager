@@ -3,14 +3,10 @@ import { Printer } from "lucide-react";
 import { Modal } from "../shared/ui";
 import { currency } from "../../lib/format";
 import QrCodeSvg from "../shared/QrCodeSvg";
-import { FRAME_CATEGORIES, ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
+import { ITEM_TYPES, itemTypeLabel, frameCategoryLabel, suggestNextSku } from "../../lib/rxConstants";
 import { createLabelReservations } from "../../lib/api";
 
 const NON_FRAME_TYPES = ITEM_TYPES.filter((t) => t.id !== "frame");
-const ALL_CATEGORIES = [
-  ...FRAME_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
-  ...NON_FRAME_TYPES.map((t) => ({ id: t.id, label: itemTypeLabel(t.id) })),
-];
 
 // This is a fold-in-half tag: the full printed strip is 6cm long, but the
 // shop physically folds it at the 3cm center mark so it ends up as a 3cm
@@ -149,9 +145,14 @@ function printLabelsInNewWindow(labels, svgEls) {
   setTimeout(() => printWindow.print(), 150);
 }
 
-export default function PrintLabelsModal({ inventory, shopName, branchId, onClose }) {
+export default function PrintLabelsModal({ inventory, categories, shopName, branchId, onClose }) {
   const [mode, setMode] = useState("inventory");
   const previewRef = useRef(null);
+
+  const ALL_CATEGORIES = [
+    ...(categories || []).map((c) => ({ id: c.id, label: c.label })),
+    ...NON_FRAME_TYPES.map((t) => ({ id: t.id, label: itemTypeLabel(t.id) })),
+  ];
 
   const eligible = inventory.filter((i) => i.sku && i.sku.trim());
   const [selected, setSelected] = useState(() => new Set());
@@ -219,8 +220,8 @@ export default function PrintLabelsModal({ inventory, shopName, branchId, onClos
         : blankLabels.map((label) => ({
             shopName,
             primary:
-              frameCategoryLabel(label.category) !== label.category
-                ? frameCategoryLabel(label.category)
+              frameCategoryLabel(label.category, categories) !== label.category
+                ? frameCategoryLabel(label.category, categories)
                 : itemTypeLabel(label.category),
             sku: label.sku,
             priceText: label.price != null ? currency(label.price) : "",
@@ -337,7 +338,7 @@ export default function PrintLabelsModal({ inventory, shopName, branchId, onClos
             <div key={label.sku} className="border border-border rounded">
               <LabelStrip
                 shopName={shopName}
-                primary={frameCategoryLabel(label.category) !== label.category ? frameCategoryLabel(label.category) : itemTypeLabel(label.category)}
+                primary={frameCategoryLabel(label.category, categories) !== label.category ? frameCategoryLabel(label.category, categories) : itemTypeLabel(label.category)}
                 sku={label.sku}
                 price={label.price}
               />

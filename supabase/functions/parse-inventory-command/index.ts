@@ -61,9 +61,36 @@ async function resolveGeminiKey(branchId: string | null | undefined, authHeader:
   }
 }
 
-const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for adding eyewear inventory into strict JSON. The speech is Indian English, transcribed by voice recognition and may contain minor errors (e.g. "gents" may be misheard as "giants"). Numbers may be spoken as words (e.g. "two thousand", "twenty", "a dozen"); prices are in Indian Rupees. Extract:
+// A shop's own category list (see branch_categories / CategoriesModal) is
+// sent from the frontend with every request, since it already has that
+// list loaded -- avoids a second DB round trip from inside this function.
+// Falls back to the app's original starter set for any caller that
+// doesn't send one (an old cached frontend, or a branch with an empty
+// list for some reason) so this never just breaks.
+const DEFAULT_CATEGORIES = [
+  { code: "LM", label: "Ladies Metal" },
+  { code: "LMX", label: "Ladies Metal (Exclusive)" },
+  { code: "LS", label: "Ladies Sheet" },
+  { code: "LSX", label: "Ladies Sheet (Exclusive)" },
+  { code: "LF", label: "Ladies Frameless" },
+  { code: "GM", label: "Gents Metal" },
+  { code: "GMX", label: "Gents Metal (Exclusive)" },
+  { code: "GS", label: "Gents Sheet" },
+  { code: "GSX", label: "Gents Sheet (Exclusive)" },
+  { code: "GF", label: "Gents Frameless" },
+  { code: "KB", label: "Kids Boys" },
+  { code: "KBX", label: "Kids Boys (Exclusive)" },
+  { code: "KG", label: "Kids Girls" },
+  { code: "KGX", label: "Kids Girls (Exclusive)" },
+  { code: "SG", label: "Sunglasses" },
+];
+
+function buildPrompt(categories: { code: string; label: string }[]): string {
+  const list = categories.length ? categories : DEFAULT_CATEGORIES;
+  const categoryDescription = list.map((c) => `"${c.code}" (${c.label})`).join(", ");
+  return `You convert a shopkeeper's one-sentence spoken instruction for adding eyewear inventory into strict JSON. The speech is Indian English, transcribed by voice recognition and may contain minor errors (e.g. "gents" may be misheard as "giants"). Numbers may be spoken as words (e.g. "two thousand", "twenty", "a dozen"); prices are in Indian Rupees. Extract:
 - type: one of "frame", "sunglasses", "lens", "contact", "accessory" -- infer from context; default to "frame" if it's clearly eyewear stock but the exact type is unclear; use null only if you truly cannot tell it's inventory at all
-- category: for frames or sunglasses, the closest match among these category codes based on gender + material + tier mentioned ("gents metal" -> "GM", "ladies sheet exclusive" -> "LSX", "kids boys" -> "KB", "sunglasses" -> "SG", etc): "LM" (Ladies Metal), "LMX" (Ladies Metal Exclusive), "LS" (Ladies Sheet), "LSX" (Ladies Sheet Exclusive), "LF" (Ladies Frameless), "GM" (Gents Metal), "GMX" (Gents Metal Exclusive), "GS" (Gents Sheet), "GSX" (Gents Sheet Exclusive), "GF" (Gents Frameless), "KB" (Kids Boys), "KBX" (Kids Boys Exclusive), "KG" (Kids Girls), "KGX" (Kids Girls Exclusive), "SG" (Sunglasses). Use null if none of these is mentioned, or the item is a lens/contact/accessory (not a frame or sunglasses).
+- category: for frames or sunglasses, the closest match among this shop's own category codes, based on whatever gender/material/tier/style words are mentioned: ${categoryDescription}. Use null if none of these fits, or the item is a lens/contact/accessory (not a frame or sunglasses).
 - brand: brand name if mentioned, else null -- if the instruction says the item has no brand/is unbranded/generic/local, use "Non-Branded" as the brand instead of null
 - model: model name or number if mentioned, else null
 - sku: any color, code, or short descriptor mentioned that isn't the brand, model, or category (e.g. "black", "matte finish"), else null
@@ -75,16 +102,19 @@ const PROMPT = `You convert a shopkeeper's one-sentence spoken instruction for a
 A spoken number is either a quantity of separate items or a stock count of one item, never both -- set only whichever applies, and leave the other null. Mentioning "separate SKU" or "individual SKU" always means quantity, never stock, regardless of whether a brand was named.
 
 Respond with ONLY strict JSON, no markdown fences, no explanation, in exactly this shape: {"type": string|null, "category": string|null, "brand": string|null, "model": string|null, "sku": string|null, "price": number|null, "purchaseCost": number|null, "quantity": number|null, "stock": number|null}`;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   let text: string | undefined;
   let branchId: string | undefined;
+  let categories: { code: string; label: string }[] = [];
   try {
     const body = await req.json();
     text = body?.text;
     branchId = body?.branchId;
+    categories = Array.isArray(body?.categories) ? body.categories : [];
   } catch {
     return json({ error: "bad_request", message: "Expected JSON body with a `text` field." }, 400);
   }
@@ -107,7 +137,7 @@ Deno.serve(async (req: Request) => {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${PROMPT}\n\nInstruction: "${text}"` }] }],
+          contents: [{ parts: [{ text: `${buildPrompt(categories)}\n\nInstruction: "${text}"` }] }],
           generationConfig: { temperature: 0, responseMimeType: "application/json" },
         }),
         signal: controller.signal,

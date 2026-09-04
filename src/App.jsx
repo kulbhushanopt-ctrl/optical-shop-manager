@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Home, Users, Receipt, Package, AlertTriangle } from "lucide-react";
 import { supabase, supabaseConfigError } from "./lib/supabaseClient";
-import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, fetchInvoicePayments, fetchAppointments, signOut } from "./lib/api";
+import { fetchMyMemberships, fetchPatients, fetchInventory, fetchInvoices, fetchInvoicePayments, fetchAppointments, fetchBranchCategories, signOut } from "./lib/api";
 import { Spinner, BottomNav } from "./components/shared/ui";
 import AuthScreen from "./components/AuthScreen";
 import ShopAccessGate from "./components/ShopAccessGate";
@@ -163,6 +163,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const [invoices, setInvoices] = useState([]);
   const [payments, setPayments] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [newInvoicePatientId, setNewInvoicePatientId] = useState(null);
   const isOwner = role === "owner";
 
@@ -178,24 +179,27 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
     (async () => {
       setLoading(true);
       try {
-        const [p, inv, invc, pay, appts] = await Promise.all([
+        const [p, inv, invc, pay, appts, cats] = await Promise.all([
           fetchPatients(branch.id),
           fetchInventory(branch.id),
           fetchInvoices(branch.id),
           fetchInvoicePayments(branch.id),
           fetchAppointments(branch.id),
+          fetchBranchCategories(branch.id),
         ]);
         setPatients(p);
         setInventory(inv);
         setInvoices(invc);
         setPayments(pay);
         setAppointments(appts);
+        setCategories(cats);
       } catch (e) {
         setPatients([]);
         setInventory([]);
         setInvoices([]);
         setPayments([]);
         setAppointments([]);
+        setCategories([]);
       }
       setLoading(false);
     })();
@@ -260,6 +264,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
               <InventoryTab
                 inventory={inventory}
                 setInventory={setInventory}
+                categories={categories}
+                setCategories={setCategories}
                 branchId={branch.id}
                 isOwner={isOwner}
                 shopName={branch.name}
