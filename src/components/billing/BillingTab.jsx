@@ -28,6 +28,8 @@ export default function BillingTab({
   shopInfo,
   prefillPatientId,
   onPrefillConsumed,
+  quickAction,
+  onQuickActionConsumed,
 }) {
   const [showNew, setShowNew] = useState(false);
   const [newInvoiceInitialPatientId, setNewInvoiceInitialPatientId] = useState(null);
@@ -47,6 +49,15 @@ export default function BillingTab({
       onPrefillConsumed?.();
     }
   }, [prefillPatientId, onPrefillConsumed]);
+
+  // Home tab's "Create Invoice" quick action -- same walk-in default the
+  // header's own Plus button opens, just triggered from the dashboard.
+  useEffect(() => {
+    if (quickAction === "newInvoice") {
+      setShowNew(true);
+      onQuickActionConsumed?.();
+    }
+  }, [quickAction, onQuickActionConsumed]);
 
   const openInvoice = invoices.find((i) => i.id === openInvoiceId) || null;
 

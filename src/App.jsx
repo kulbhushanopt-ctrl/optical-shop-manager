@@ -165,6 +165,7 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const [appointments, setAppointments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [newInvoicePatientId, setNewInvoicePatientId] = useState(null);
+  const [quickAction, setQuickAction] = useState(null);
   const isOwner = role === "owner";
 
   // "Generate bill" from a patient's detail view jumps to Billing with that
@@ -173,6 +174,14 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
   const generateBillFor = (patientId) => {
     setNewInvoicePatientId(patientId);
     setTab("billing");
+  };
+
+  // Home tab's quick-action buttons jump to a tab AND ask it to open its
+  // "add" modal immediately, instead of landing on the tab and making the
+  // user find the button themselves.
+  const goQuickAction = (targetTab, action) => {
+    setQuickAction(action);
+    setTab(targetTab);
   };
 
   useEffect(() => {
@@ -229,7 +238,18 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
             onBranchCreated={onBranchCreated}
           />
           <div className="flex-1 min-h-0 overflow-y-auto pb-4 md:pb-6" style={{ WebkitOverflowScrolling: "touch" }}>
-            {tab === "home" && <HomeTab patients={patients} inventory={inventory} invoices={invoices} appointments={appointments} setTab={setTab} />}
+            {tab === "home" && (
+              <HomeTab
+                patients={patients}
+                inventory={inventory}
+                invoices={invoices}
+                appointments={appointments}
+                shopInfo={branch}
+                isOwner={isOwner}
+                setTab={setTab}
+                onQuickAction={goQuickAction}
+              />
+            )}
             {tab === "patients" && (
               <PatientsTab
                 patients={patients}
@@ -241,6 +261,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 appointments={appointments}
                 setAppointments={setAppointments}
                 onGenerateBill={generateBillFor}
+                quickAction={quickAction}
+                onQuickActionConsumed={() => setQuickAction(null)}
               />
             )}
             {tab === "billing" && (
@@ -258,6 +280,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 shopInfo={branch}
                 prefillPatientId={newInvoicePatientId}
                 onPrefillConsumed={() => setNewInvoicePatientId(null)}
+                quickAction={quickAction}
+                onQuickActionConsumed={() => setQuickAction(null)}
               />
             )}
             {tab === "inventory" && (
@@ -268,6 +292,8 @@ function ShopApp({ branch, role, memberships, onSwitchBranch, onBranchCreated, o
                 setCategories={setCategories}
                 branchId={branch.id}
                 isOwner={isOwner}
+                quickAction={quickAction}
+                onQuickActionConsumed={() => setQuickAction(null)}
                 shopName={branch.name}
               />
             )}

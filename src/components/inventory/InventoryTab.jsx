@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search, Tags } from "lucide-react";
 import {
   createInventoryItem,
@@ -46,7 +46,17 @@ function ItemIcon({ type }) {
   return <Eye size={16} className="text-lens" />;
 }
 
-export default function InventoryTab({ inventory, setInventory, categories, setCategories, branchId, isOwner, shopName }) {
+export default function InventoryTab({
+  inventory,
+  setInventory,
+  categories,
+  setCategories,
+  branchId,
+  isOwner,
+  shopName,
+  quickAction,
+  onQuickActionConsumed,
+}) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -59,6 +69,18 @@ export default function InventoryTab({ inventory, setInventory, categories, setC
   const [showTextAdd, setShowTextAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+
+  // Home tab's "Update Stock" / "Scan Stock List" quick actions land here
+  // with the matching modal already asked to open.
+  useEffect(() => {
+    if (quickAction === "addStock") {
+      setShowAdd(true);
+      onQuickActionConsumed?.();
+    } else if (quickAction === "scanStock") {
+      setShowScanList(true);
+      onQuickActionConsumed?.();
+    }
+  }, [quickAction, onQuickActionConsumed]);
 
   const q = query.trim().toLowerCase();
   const filtered = inventory.filter((i) => {

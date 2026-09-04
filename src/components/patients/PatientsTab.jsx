@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { Plus, Search, Download, Upload, Users, ChevronRight, CalendarClock, Flag } from "lucide-react";
 import {
@@ -16,13 +16,34 @@ import AddPatientModal from "./AddPatientModal";
 import PatientDetailModal from "./PatientDetailModal";
 import ImportPatientsExcelModal from "./ImportPatientsExcelModal";
 
-export default function PatientsTab({ patients, setPatients, branchId, isOwner, shopInfo, invoices, appointments, setAppointments, onGenerateBill }) {
+export default function PatientsTab({
+  patients,
+  setPatients,
+  branchId,
+  isOwner,
+  shopInfo,
+  invoices,
+  appointments,
+  setAppointments,
+  onGenerateBill,
+  quickAction,
+  onQuickActionConsumed,
+}) {
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editPatient, setEditPatient] = useState(null);
   const [openPatientId, setOpenPatientId] = useState(null);
   const [error, setError] = useState("");
+
+  // Home tab's "Add Patient" quick action lands here with this modal
+  // already asked to open, instead of the user having to find the button.
+  useEffect(() => {
+    if (quickAction === "addPatient") {
+      setShowAdd(true);
+      onQuickActionConsumed?.();
+    }
+  }, [quickAction, onQuickActionConsumed]);
 
   const upcomingFor = (patientId) => appointments.find((a) => a.patientId === patientId && a.status === "scheduled");
 
