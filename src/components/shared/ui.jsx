@@ -270,7 +270,10 @@ export function Avatar({ name, size = 38, photo }) {
 
 export function BottomNav({ tabs, active, onChange }) {
   return (
-    <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch">
+    <div
+      className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch"
+      style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))" }}
+    >
       {tabs.map((t) => {
         const Icon = t.icon;
         const isActive = t.id === active;
