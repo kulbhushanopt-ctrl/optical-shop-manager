@@ -17,7 +17,10 @@ const corsHeaders = {
 // allowed to hang before we give up and let the user retry, instead of the
 // request sitting for up to 150s.
 const GEMINI_MODEL = "gemini-3.6-flash";
-const GEMINI_TIMEOUT_MS = 25000;
+// Raised from 25s -- a photo at the higher capture resolution needed to
+// actually read the fine engraved text takes noticeably longer for
+// Gemini to process than the old low-res photos did.
+const GEMINI_TIMEOUT_MS = 45000;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
