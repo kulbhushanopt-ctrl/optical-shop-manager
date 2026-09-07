@@ -38,6 +38,13 @@ export default function BarcodeScanner({ onDetect, onClose }) {
               // (and often unfocusable) close-up shot to decode at all.
               width: { ideal: 1920 },
               height: { ideal: 1080 },
+              // Some phones default to a single fixed-distance autofocus
+              // pass on stream start instead of continuously refocusing --
+              // fine for a normal photo, but it means the camera never
+              // re-focuses once it's brought in close to a small printed
+              // label. Ignored harmlessly on devices/browsers that don't
+              // support this constraint.
+              advanced: [{ focusMode: "continuous" }],
             },
           },
           videoRef.current,
