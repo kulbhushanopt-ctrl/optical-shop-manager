@@ -4,7 +4,7 @@ import { useVoiceInput } from "../../hooks/useVoiceInput";
 import { useModalBackClose } from "../../hooks/useModalBackClose";
 import { useVisualViewportBox } from "../../hooks/useVisualViewportBox";
 
-export function Modal({ title, onClose, children, wide }) {
+export function Modal({ title, onClose, children, wide, headerAction }) {
   useModalBackClose(onClose);
   const vv = useVisualViewportBox();
   return (
@@ -18,9 +18,12 @@ export function Modal({ title, onClose, children, wide }) {
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 sticky top-0 bg-card/95 backdrop-blur-sm z-10 border-b border-border/60">
           <h2 className="font-display font-semibold text-lg text-ink tracking-tight">{title}</h2>
-          <button onClick={onClose} className="text-slate hover:text-ink hover:bg-paper active:scale-90 transition p-1.5 -mr-1.5 rounded-full">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1 -mr-1.5">
+            {headerAction}
+            <button onClick={onClose} className="text-slate hover:text-ink hover:bg-paper active:scale-90 transition p-1.5 rounded-full">
+              <X size={20} />
+            </button>
+          </div>
         </div>
         <div className="px-5 pb-6 pt-1">{children}</div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, Contact, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, Check, Contact, Loader2, Sparkles, X } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceTextArea, TextInput, PrimaryBtn, ImageLightbox } from "../shared/ui";
 import { calculateAge } from "../../lib/format";
 import { scanPatientIntake } from "../../lib/api";
@@ -93,7 +93,20 @@ export default function AddPatientModal({ onClose, onSave, initial, branchId }) 
   };
 
   return (
-    <Modal title={initial ? "Edit patient" : "New patient"} onClose={onClose}>
+    <Modal
+      title={initial ? "Edit patient" : "New patient"}
+      onClose={onClose}
+      headerAction={
+        <button
+          onClick={save}
+          disabled={!name.trim()}
+          className="w-8 h-8 rounded-full flex items-center justify-center bg-focus text-ink active:scale-90 transition disabled:opacity-40"
+          aria-label="Save patient"
+        >
+          <Check size={16} strokeWidth={2.5} />
+        </button>
+      }
+    >
       <div className="flex justify-center mb-4">
         <div className="relative">
           <button
