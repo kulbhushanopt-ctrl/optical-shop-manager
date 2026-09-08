@@ -2,13 +2,19 @@ import React from "react";
 import { X, Mic, Loader2 } from "lucide-react";
 import { useVoiceInput } from "../../hooks/useVoiceInput";
 import { useModalBackClose } from "../../hooks/useModalBackClose";
+import { useVisualViewportBox } from "../../hooks/useVisualViewportBox";
 
 export function Modal({ title, onClose, children, wide }) {
   useModalBackClose(onClose);
+  const vv = useVisualViewportBox();
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-0 sm:px-4 animate-modal-backdrop">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] px-0 sm:px-4 animate-modal-backdrop"
+      style={vv ? { top: vv.top, height: vv.height } : undefined}
+    >
       <div
         className={`w-full ${wide ? "sm:max-w-lg" : "sm:max-w-sm"} bg-card rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto shadow-2xl shadow-black/20 animate-modal-panel`}
+        style={vv ? { maxHeight: vv.height * 0.92 } : undefined}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 sticky top-0 bg-card/95 backdrop-blur-sm z-10 border-b border-border/60">
           <h2 className="font-display font-semibold text-lg text-ink tracking-tight">{title}</h2>
