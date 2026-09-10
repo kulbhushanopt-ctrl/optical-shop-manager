@@ -15,7 +15,7 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
   const captionText = `${shopInfo?.name || "Optical Shop"}${shopInfo?.phone ? `\nPh: ${shopInfo.phone}` : ""}`;
 
   const slipText =
-    `${shopInfo?.name || "Optical Shop"} — Prescription\n` +
+    `${shopInfo?.name || "Optical Shop"} — Prescription (Rx)\n` +
     (shopInfo?.address ? `${shopInfo.address}\n` : "") +
     (shopInfo?.phone ? `Ph: ${shopInfo.phone}\n` : "") +
     `\nPatient: ${patient.name}${age != null ? ` (Age ${age})` : ""}\n` +
@@ -51,7 +51,7 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
           </div>
           <div>
             <p className="font-display text-sm font-bold text-ink leading-tight">{shopInfo?.name || "Optical Shop"}</p>
-            <p className="text-[10px] uppercase tracking-wide text-slate">Optical Prescription</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate">Prescription (Rx)</p>
             {shopInfo?.address && <p className="text-[10px] mt-0.5 max-w-[200px] text-slate">{shopInfo.address}</p>}
             {shopInfo?.phone && <p className="text-[10px] text-slate">Ph: {shopInfo.phone}</p>}
             {shopInfo?.gstin && <p className="text-[10px] text-slate">GSTIN: {shopInfo.gstin}</p>}
