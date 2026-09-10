@@ -6,9 +6,21 @@ import { formatDate, calculateAge } from "../../lib/format";
 
 const pad = (s, n) => String(s ?? "—").padEnd(n, " ");
 
+// A prescription's validity is measured from the exam date, not from
+// whenever the slip happens to be reprinted/reshared later.
+function validUntil(rxDate) {
+  if (!rxDate) return null;
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rxDate);
+  const d = new Date(isDateOnly ? `${rxDate}T00:00:00` : rxDate);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
   const slipRef = useRef(null);
   const age = calculateAge(patient.dob);
+  const validUntilDate = validUntil(rx.date);
 
   // Short caption for image/PDF shares -- the image already shows every
   // detail, so the caption underneath it just needs to identify the shop.
@@ -28,7 +40,9 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
     ((rx.lensType || rx.coatings?.length || rx.lensIndex || rx.tint)
       ? `Lens: ${[rx.lensType, rx.lensIndex && `${rx.lensIndex} index`, rx.tint, rx.coatings?.join(" + ")].filter(Boolean).join(", ")}\n`
       : "") +
-    (rx.notes ? `Notes: ${rx.notes}\n` : "");
+    (rx.notes ? `Notes: ${rx.notes}\n` : "") +
+    (validUntilDate ? `Valid until: ${formatDate(validUntilDate)} (1 year from issue)\n` : "") +
+    (shopInfo?.optometrist_name ? `Optometrist: ${shopInfo.optometrist_name}\n` : "");
 
   return (
     <Modal title="Prescription slip" onClose={onClose}>
@@ -142,10 +156,16 @@ export default function RxSlipModal({ patient, rx, shopInfo, onClose }) {
         )}
         <div className="border-t border-dashed border-border pt-3.5 mt-2.5 flex items-end justify-between">
           <div>
-            <div className="border-b border-slate w-[140px] h-6" />
-            <p className="text-[10px] mt-1 text-slate">Optometrist signature</p>
+            {shopInfo?.optometrist_signature ? (
+              <img src={shopInfo.optometrist_signature} alt="Optometrist signature" className="h-8 max-w-[140px] object-contain" />
+            ) : (
+              <div className="border-b border-slate w-[140px] h-6" />
+            )}
+            <p className="text-[10px] mt-1 text-slate">{shopInfo?.optometrist_name || "Optometrist signature"}</p>
           </div>
-          <p className="text-[10px] text-right max-w-[120px] text-slate">Valid for 2 years from issue date unless noted otherwise.</p>
+          <p className="text-[10px] text-right max-w-[130px] text-slate">
+            {validUntilDate ? `Valid until ${formatDate(validUntilDate)} (1 year from issue).` : "Valid for 1 year from issue date unless noted otherwise."}
+          </p>
         </div>
       </div>
     </Modal>

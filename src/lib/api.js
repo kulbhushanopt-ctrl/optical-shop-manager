@@ -68,7 +68,7 @@ export async function acceptBranchInvite() {
 export async function fetchMyMemberships() {
   const { data, error } = await supabase
     .from("branch_members")
-    .select("role,branch_id,branches(id,name,address,phone,gstin,google_review_link,upi_id,logo)");
+    .select("role,branch_id,branches(id,name,address,phone,gstin,google_review_link,upi_id,logo,optometrist_name,optometrist_signature)");
   if (error) throw error;
   return data;
 }

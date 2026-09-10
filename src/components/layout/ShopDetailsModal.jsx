@@ -16,11 +16,15 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
   const [upiId, setUpiId] = useState(shopInfo.upi_id || "");
   const [logo, setLogo] = useState(shopInfo.logo || null);
   const [logoLoading, setLogoLoading] = useState(false);
+  const [optometristName, setOptometristName] = useState(shopInfo.optometrist_name || "");
+  const [optometristSignature, setOptometristSignature] = useState(shopInfo.optometrist_signature || null);
+  const [signatureLoading, setSignatureLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showStaff, setShowStaff] = useState(false);
   const [showAiKey, setShowAiKey] = useState(false);
   const logoInputRef = useRef(null);
+  const signatureInputRef = useRef(null);
 
   const handleLogoPick = async (e) => {
     const file = e.target.files?.[0];
@@ -36,6 +40,20 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
     e.target.value = "";
   };
 
+  const handleSignaturePick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSignatureLoading(true);
+    try {
+      const compressed = await compressImage(file, 500, 0.85);
+      setOptometristSignature(compressed);
+    } catch (err) {
+      alert("Couldn't process that image — please try another.");
+    }
+    setSignatureLoading(false);
+    e.target.value = "";
+  };
+
   const save = async () => {
     setBusy(true);
     setError("");
@@ -48,6 +66,8 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
         google_review_link: googleReviewLink.trim() || null,
         upi_id: upiId.trim() || null,
         logo: logo || null,
+        optometrist_name: optometristName.trim() || null,
+        optometrist_signature: optometristSignature || null,
       });
       onBranchUpdated(updated);
       onClose();
@@ -139,6 +159,50 @@ export default function ShopDetailsModal({ shopInfo, onClose, isOwner, branchId,
           disabled={!isOwner}
         />
         <p className="text-[10px] text-slate mt-1">Lets you show a "Scan to pay" QR code on invoices, using this UPI ID.</p>
+      </Field>
+      <Field label="Optometrist name (optional)">
+        <TextInput
+          value={optometristName}
+          onChange={(e) => setOptometristName(e.target.value)}
+          placeholder="Dr. Kulbhushan Sachdeva"
+          disabled={!isOwner}
+        />
+      </Field>
+      <Field label="Optometrist signature (optional)">
+        <input ref={signatureInputRef} type="file" accept="image/*" className="sr-only" onChange={handleSignaturePick} />
+        <div className="rounded-xl border border-border bg-paper p-2.5 flex items-center gap-3">
+          <div className="w-24 h-12 rounded-lg bg-card border border-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {signatureLoading ? (
+              <Loader2 size={16} className="text-slate animate-spin" />
+            ) : optometristSignature ? (
+              <img src={optometristSignature} alt="Optometrist signature" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[10px] text-slate">No signature</span>
+            )}
+          </div>
+          {isOwner && (
+            <div className="flex flex-col gap-1 items-start">
+              <button
+                type="button"
+                onClick={() => {
+                  notifyFilePickerOpening();
+                  signatureInputRef.current?.click();
+                }}
+                className="text-[11px] font-medium text-lens"
+              >
+                {optometristSignature ? "Change signature" : "Add signature"}
+              </button>
+              {optometristSignature && (
+                <button type="button" onClick={() => setOptometristSignature(null)} className="text-[11px] font-medium text-warn">
+                  Remove
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        <p className="text-[10px] text-slate mt-1">
+          A photo of the optometrist's signature on paper works well. It's printed on every prescription slip instead of a blank line.
+        </p>
       </Field>
       {error && <p className="text-xs text-warn mb-3">{error}</p>}
 
