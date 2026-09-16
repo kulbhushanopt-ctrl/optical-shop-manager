@@ -1,5 +1,28 @@
 import { supabase } from "./supabaseClient";
 
+// Supabase's REST layer caps any single request at 1000 rows by default
+// (project setting "Max rows"), silently truncating anything past that --
+// it doesn't error, it just returns a partial result. A shop with more than
+// 1000 inventory items (or patients, invoices, etc.) would see the list cap
+// out there, and since these queries sort newest-first, the rows that drop
+// off are the OLDEST ones -- which looked exactly like "the first item I
+// added disappears" once a shop crossed 1000 frames. This re-issues the
+// query in pages until a short page confirms there's nothing left, so the
+// full list comes back regardless of how many rows the shop has.
+const PAGE_SIZE = 1000;
+async function fetchAllRows(buildQuery) {
+  let rows = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    rows = rows.concat(data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return rows;
+}
+
 /* ---------- Auth ---------- */
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -135,13 +158,9 @@ export async function cancelInvite(id) {
 
 /* ---------- Patients ---------- */
 export async function fetchPatients(branchId) {
-  const { data, error } = await supabase
-    .from("patients")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
+  return fetchAllRows(() =>
+    supabase.from("patients").select("*").eq("branch_id", branchId).order("created_at", { ascending: false })
+  );
 }
 
 export async function createPatient(branchId, patient) {
@@ -248,13 +267,10 @@ export function inventoryFromDb(row) {
 }
 
 export async function fetchInventory(branchId) {
-  const { data, error } = await supabase
-    .from("inventory")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data.map(inventoryFromDb);
+  const rows = await fetchAllRows(() =>
+    supabase.from("inventory").select("*").eq("branch_id", branchId).order("created_at", { ascending: false })
+  );
+  return rows.map(inventoryFromDb);
 }
 
 export async function createInventoryItem(branchId, item) {
@@ -358,13 +374,10 @@ export function invoiceFromDb(row) {
 }
 
 export async function fetchInvoices(branchId) {
-  const { data, error } = await supabase
-    .from("invoices")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("date", { ascending: false });
-  if (error) throw error;
-  return data.map(invoiceFromDb);
+  const rows = await fetchAllRows(() =>
+    supabase.from("invoices").select("*").eq("branch_id", branchId).order("date", { ascending: false })
+  );
+  return rows.map(invoiceFromDb);
 }
 
 // Creates the invoice, decrements stock for every line item, and logs the
@@ -423,13 +436,10 @@ function paymentFromDb(row) {
 }
 
 export async function fetchInvoicePayments(branchId) {
-  const { data, error } = await supabase
-    .from("invoice_payments")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("paid_at", { ascending: false });
-  if (error) throw error;
-  return data.map(paymentFromDb);
+  const rows = await fetchAllRows(() =>
+    supabase.from("invoice_payments").select("*").eq("branch_id", branchId).order("paid_at", { ascending: false })
+  );
+  return rows.map(paymentFromDb);
 }
 
 /* ---------- Appointments ---------- */
@@ -448,13 +458,10 @@ function appointmentFromDb(row) {
 }
 
 export async function fetchAppointments(branchId) {
-  const { data, error } = await supabase
-    .from("appointments")
-    .select("*")
-    .eq("branch_id", branchId)
-    .order("scheduled_at", { ascending: true });
-  if (error) throw error;
-  return data.map(appointmentFromDb);
+  const rows = await fetchAllRows(() =>
+    supabase.from("appointments").select("*").eq("branch_id", branchId).order("scheduled_at", { ascending: true })
+  );
+  return rows.map(appointmentFromDb);
 }
 
 export async function createAppointment(branchId, appt) {
