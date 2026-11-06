@@ -235,6 +235,11 @@ function inventoryToDb(item) {
     contact_type: item.contactType || null,
     hsn_code: item.hsnCode || null,
     category: item.category || null,
+    // Photo and website switch are only written when the caller actually
+    // carries them, so older update paths (e.g. the Excel importer) that
+    // build an item without these fields never wipe an existing photo.
+    ...(item.photoUrl !== undefined ? { photo_url: item.photoUrl || null } : {}),
+    ...(item.showOnline !== undefined ? { show_online: item.showOnline !== false } : {}),
   };
 }
 
@@ -263,6 +268,8 @@ export function inventoryFromDb(row) {
     contactType: row.contact_type || "",
     hsnCode: row.hsn_code || "",
     category: row.category || "",
+    photoUrl: row.photo_url || "",
+    showOnline: row.show_online !== false,
   };
 }
 
@@ -295,6 +302,33 @@ export async function updateInventoryItem(id, item) {
   const { data, error } = await supabase
     .from("inventory")
     .update(inventoryToDb(item))
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return inventoryFromDb(data);
+}
+
+// Uploads a product photo to the public "product-photos" bucket under the
+// branch's own folder (storage policies only let that branch's members write
+// there) and returns its public URL for the website and the stock list.
+export async function uploadProductPhoto(branchId, blob, sku) {
+  const safe = (sku || "item").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+  const path = `${branchId}/${safe}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const { error } = await supabase.storage.from("product-photos").upload(path, blob, {
+    contentType: "image/jpeg",
+    cacheControl: "31536000",
+    upsert: false,
+  });
+  if (error) throw error;
+  return supabase.storage.from("product-photos").getPublicUrl(path).data.publicUrl;
+}
+
+// Sets just the photo on an existing item (used by bulk photo upload).
+export async function setInventoryPhoto(id, photoUrl) {
+  const { data, error } = await supabase
+    .from("inventory")
+    .update({ photo_url: photoUrl })
     .eq("id", id)
     .select()
     .single();

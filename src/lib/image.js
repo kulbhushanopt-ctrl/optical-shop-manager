@@ -31,3 +31,38 @@ export function compressImage(file, maxDim = 640, quality = 0.75) {
     img.src = objectUrl;
   });
 }
+
+// Same downscale as compressImage, but returns a JPEG Blob for uploading to
+// storage instead of a base64 string. 1200px keeps product photos sharp on
+// the website while staying around 100-250 KB each.
+export function compressImageToBlob(file, maxDim = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      // White background so transparent PNGs don't turn black as JPEG.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(objectUrl);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Couldn't read that photo"))), "image/jpeg", quality);
+    };
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    img.src = objectUrl;
+  });
+}

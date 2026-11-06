@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search, Tags } from "lucide-react";
+import { Plus, Package, Glasses, Eye, Droplet, AlertTriangle, Mic, Loader2, FileSpreadsheet, Keyboard, Barcode, Camera, Search, Tags, Images, EyeOff } from "lucide-react";
 import {
   createInventoryItem,
   createInventoryItems,
@@ -18,6 +18,7 @@ import ScanStockListModal from "./ScanStockListModal";
 import TextCommandModal from "./TextCommandModal";
 import PrintLabelsModal from "./PrintLabelsModal";
 import CategoriesModal from "./CategoriesModal";
+import BulkPhotosModal from "./BulkPhotosModal";
 
 // A single spoken number is either how many units of ONE named item to
 // stock, or how many SEPARATE un-named items to create -- never both (see
@@ -69,6 +70,7 @@ export default function InventoryTab({
   const [showTextAdd, setShowTextAdd] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [showBulkPhotos, setShowBulkPhotos] = useState(false);
 
   // Home tab's "Update Stock" / "Scan Stock List" quick actions land here
   // with the matching modal already asked to open.
@@ -84,7 +86,9 @@ export default function InventoryTab({
 
   const q = query.trim().toLowerCase();
   const filtered = inventory.filter((i) => {
-    if (filter !== "all" && i.type !== filter) return false;
+    if (filter === "nophoto") {
+      if (i.photoUrl) return false;
+    } else if (filter !== "all" && i.type !== filter) return false;
     if (!q) return true;
     return (
       (i.brand || "").toLowerCase().includes(q) ||
@@ -184,6 +188,9 @@ export default function InventoryTab({
         action={
           isOwner ? (
             <div className="flex items-center gap-2">
+              <RoundIconBtn onClick={() => setShowBulkPhotos(true)}>
+                <Images size={15} />
+              </RoundIconBtn>
               <RoundIconBtn onClick={() => setShowCategories(true)}>
                 <Tags size={15} />
               </RoundIconBtn>
@@ -235,7 +242,7 @@ export default function InventoryTab({
         </div>
       </div>
       <div className="px-5 flex gap-2 mb-3 overflow-x-auto">
-        {[{ id: "all", label: "All" }, ...ITEM_TYPES].map((f) => (
+        {[{ id: "all", label: "All" }, ...ITEM_TYPES, { id: "nophoto", label: `No photo (${inventory.filter((i) => !i.photoUrl).length})` }].map((f) => (
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
@@ -270,16 +277,26 @@ export default function InventoryTab({
                   isOwner ? "active:scale-[0.98] transition duration-150 cursor-pointer" : ""
                 }`}
               >
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    ["frame", "sunglasses"].includes(item.type) ? "bg-focusSoft" : "bg-lensSoft"
-                  }`}
-                >
-                  <ItemIcon type={item.type} />
-                </div>
+                {item.photoUrl ? (
+                  <img
+                    src={item.photoUrl}
+                    alt=""
+                    loading="lazy"
+                    className="w-11 h-11 rounded-xl object-cover flex-shrink-0 border border-border/70 bg-paper"
+                  />
+                ) : (
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      ["frame", "sunglasses"].includes(item.type) ? "bg-focusSoft" : "bg-lensSoft"
+                    }`}
+                  >
+                    <ItemIcon type={item.type} />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate text-ink">
-                    {item.brand} {item.model}
+                  <p className="text-sm font-medium truncate text-ink flex items-center gap-1">
+                    {item.showOnline === false && <EyeOff size={11} className="text-slate flex-shrink-0" aria-label="Hidden from website" />}
+                    <span className="truncate">{item.brand} {item.model}</span>
                   </p>
                   <p className="text-[11px] truncate text-slate font-mono">
                     {item.category ? frameCategoryLabel(item.category, categories) : itemTypeLabel(item.type)} · {item.sku} · {currency(item.price)}
@@ -377,6 +394,17 @@ export default function InventoryTab({
       )}
       {isOwner && showLabels && (
         <PrintLabelsModal inventory={inventory} categories={categories} shopName={shopName} branchId={branchId} onClose={() => setShowLabels(false)} />
+      )}
+      {isOwner && showBulkPhotos && (
+        <BulkPhotosModal
+          branchId={branchId}
+          inventory={inventory}
+          onClose={() => setShowBulkPhotos(false)}
+          onUpdated={(updated) => {
+            const byId = new Map(updated.map((u) => [u.id, u]));
+            setInventory((prev) => prev.map((i) => byId.get(i.id) || i));
+          }}
+        />
       )}
       {isOwner && showCategories && (
         <CategoriesModal

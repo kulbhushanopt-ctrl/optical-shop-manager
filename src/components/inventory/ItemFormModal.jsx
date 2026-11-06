@@ -1,9 +1,10 @@
-import React, { Suspense, lazy, useState } from "react";
-import { Eye, Droplet, Trash2, Barcode } from "lucide-react";
+import React, { Suspense, lazy, useRef, useState } from "react";
+import { Eye, Droplet, Trash2, Barcode, Camera, ImagePlus, Loader2, X, Globe } from "lucide-react";
 import { Modal, Field, VoiceInput, VoiceRxInput, TextInput, Select, PrimaryBtn } from "../shared/ui";
 import { ITEM_TYPES, LENS_INDEXES, COATINGS, suggestNextSku } from "../../lib/rxConstants";
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
-import { fetchLabelReservation } from "../../lib/api";
+import { fetchLabelReservation, uploadProductPhoto } from "../../lib/api";
+import { compressImageToBlob } from "../../lib/image";
 
 // The barcode decoder library is large and only needed once someone
 // actually opens the scanner, so it's split into its own chunk instead of
@@ -32,7 +33,75 @@ const BLANK_ITEM = {
   type: "frame", category: "", brand: "", model: "", sku: "", price: "", purchasePrice: "", stock: "", low: 3,
   power: "", addPower: "", lensIndex: "", coatings: [],
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
+  photoUrl: "", showOnline: true,
 };
+
+// Product photo shown on the shop website. Uploads straight away on pick
+// (so a slow upload doesn't hold up "Save"), and the URL is stored with the
+// item when it's saved.
+function PhotoPicker({ branchId, sku, value, onChange, onBusy }) {
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !branchId) return;
+    setErr("");
+    setBusy(true);
+    onBusy?.(true);
+    try {
+      const blob = await compressImageToBlob(file);
+      const url = await uploadProductPhoto(branchId, blob, sku);
+      onChange(url);
+    } catch (x) {
+      setErr("Couldn't upload that photo — please try again.");
+    } finally {
+      setBusy(false);
+      onBusy?.(false);
+    }
+  };
+
+  return (
+    <div className="mb-3">
+      <p className="text-[11px] font-medium uppercase tracking-wide mb-1.5 text-slate">Photo (for website)</p>
+      <div className="flex items-center gap-3">
+        <div className="w-20 h-20 rounded-xl border border-border bg-paper flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+          {busy ? (
+            <Loader2 size={18} className="animate-spin text-slate" />
+          ) : value ? (
+            <>
+              <img src={value} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                aria-label="Remove photo"
+              >
+                <X size={11} />
+              </button>
+            </>
+          ) : (
+            <ImagePlus size={20} className="text-slate" />
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <button type="button" disabled={busy} onClick={() => cameraRef.current?.click()} className="text-xs font-medium px-3 py-1.5 rounded-lg bg-ink text-white flex items-center gap-1.5 disabled:opacity-50">
+            <Camera size={13} /> Take photo
+          </button>
+          <button type="button" disabled={busy} onClick={() => galleryRef.current?.click()} className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-ink flex items-center gap-1.5 disabled:opacity-50">
+            <ImagePlus size={13} /> From gallery
+          </button>
+        </div>
+      </div>
+      {err && <p className="text-[11px] text-warn mt-1">{err}</p>}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={pick} />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={pick} />
+    </div>
+  );
+}
 
 export default function ItemFormModal({ title, initial, inventory, categories, branchId, onClose, onSave, onDelete, onFoundExisting }) {
   // `initial` may be a full existing item (editing) or a partial AI-parsed
@@ -40,6 +109,7 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
   // fields (e.g. `low`, `coatings`) don't end up undefined.
   const [f, setF] = useState({ ...BLANK_ITEM, ...(initial || {}) });
   const [showScanner, setShowScanner] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const set = (k) => (v) => setF({ ...f, [k]: v });
   const toggleCoating = (c) => {
     const coatings = f.coatings || [];
@@ -49,7 +119,7 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
   // bulk voice-add, or a scanned blank label) -- SKU and price are what
   // actually make a row usable, and category is what makes a frame's SKU
   // meaningful, so those are the only things required.
-  const valid = (f.type !== "frame" || (f.category || "").trim()) && f.price !== "" && (f.sku || "").trim();
+  const valid = (f.type !== "frame" || (f.category || "").trim()) && f.price !== "" && (f.sku || "").trim() && !photoBusy;
 
   return (
     <Modal title={title} onClose={onClose}>
@@ -57,6 +127,7 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
         Only {f.type === "frame" ? "Category, Price, and SKU are" : "Price and SKU are"} required — everything else is
         optional and can be filled in later.
       </p>
+      <PhotoPicker branchId={branchId} sku={f.sku} value={f.photoUrl} onChange={(url) => setF((prev) => ({ ...prev, photoUrl: url }))} onBusy={setPhotoBusy} />
       <Field label="Type">
         <Select
           value={f.type}
@@ -218,6 +289,15 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
         <Field label="Stock"><TextInput type="number" value={f.stock} onChange={(e) => set("stock")(e.target.value)} placeholder="6" /></Field>
         <Field label="Low at"><TextInput type="number" value={f.low} onChange={(e) => set("low")(e.target.value)} placeholder="3" /></Field>
       </div>
+      <label className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2.5 mb-3 cursor-pointer">
+        <span className="text-sm text-ink flex items-center gap-2"><Globe size={14} className="text-slate" /> Show on website</span>
+        <input
+          type="checkbox"
+          checked={f.showOnline !== false}
+          onChange={(e) => set("showOnline")(e.target.checked)}
+          className="w-4 h-4 accent-ink"
+        />
+      </label>
       <PrimaryBtn
         full
         disabled={!valid}
@@ -228,6 +308,8 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
             purchasePrice: f.purchasePrice !== "" ? Number(f.purchasePrice) : null,
             stock: Number(f.stock) || 1,
             low: Number(f.low) || 3,
+            photoUrl: f.photoUrl || "",
+            showOnline: f.showOnline !== false,
           })
         }
       >
