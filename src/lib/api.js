@@ -240,6 +240,9 @@ function inventoryToDb(item) {
     // build an item without these fields never wipe an existing photo.
     ...(item.photoUrl !== undefined ? { photo_url: item.photoUrl || null } : {}),
     ...(item.showOnline !== undefined ? { show_online: item.showOnline !== false } : {}),
+    // Wholesale (B2B) fields, only written when the form carries them.
+    ...(item.wholesalePrice !== undefined ? { wholesale_price: item.wholesalePrice !== "" && item.wholesalePrice != null ? Number(item.wholesalePrice) : null } : {}),
+    ...(item.showWholesale !== undefined ? { show_wholesale: item.showWholesale === true } : {}),
   };
 }
 
@@ -270,6 +273,8 @@ export function inventoryFromDb(row) {
     category: row.category || "",
     photoUrl: row.photo_url || "",
     showOnline: row.show_online !== false,
+    wholesalePrice: row.wholesale_price ?? "",
+    showWholesale: row.show_wholesale === true,
   };
 }
 

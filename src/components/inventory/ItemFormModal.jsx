@@ -34,7 +34,7 @@ const BLANK_ITEM = {
   type: "frame", category: "", brand: "", model: "", sku: "", price: "", purchasePrice: "", stock: "", low: 3,
   power: "", addPower: "", lensIndex: "", coatings: [],
   baseCurve: "", diameter: "", duration: "", contactType: "", hsnCode: "",
-  photoUrl: "", showOnline: true,
+  photoUrl: "", showOnline: true, wholesalePrice: "", showWholesale: false,
 };
 
 // Product photo shown on the shop website. Uploads straight away on pick
@@ -320,6 +320,29 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
           className="w-4 h-4 accent-ink"
         />
       </label>
+      {["frame", "sunglasses", "contact", "accessory"].includes(f.type) && (
+        <div className="rounded-xl border border-border px-3 py-2.5 mb-3">
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <span className="text-sm text-ink">Show in wholesale (B2B)</span>
+            <input
+              type="checkbox"
+              checked={f.showWholesale === true}
+              onChange={(e) => set("showWholesale")(e.target.checked)}
+              className="w-4 h-4 accent-ink"
+            />
+          </label>
+          {f.showWholesale === true && (
+            <div className="mt-2">
+              <Field label="Wholesale price (per piece)">
+                <TextInput type="number" value={f.wholesalePrice ?? ""} onChange={(e) => set("wholesalePrice")(e.target.value)} placeholder="Trade price" />
+              </Field>
+              {(f.wholesalePrice === "" || f.wholesalePrice == null) && (
+                <p className="text-xs text-slate -mt-1">Add a wholesale price so approved retailers can order this item.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <PrimaryBtn
         full
         disabled={!valid}
@@ -332,6 +355,8 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
             low: Number(f.low) || 3,
             photoUrl: f.photoUrl || "",
             showOnline: f.showOnline !== false,
+            wholesalePrice: f.wholesalePrice !== "" && f.wholesalePrice != null ? Number(f.wholesalePrice) : "",
+            showWholesale: f.showWholesale === true,
           })
         }
       >
