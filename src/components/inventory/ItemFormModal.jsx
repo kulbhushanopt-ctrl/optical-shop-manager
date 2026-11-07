@@ -5,6 +5,7 @@ import { ITEM_TYPES, LENS_INDEXES, COATINGS, suggestNextSku } from "../../lib/rx
 import { parseRxPower, parseRxAdd } from "../../lib/rxParse";
 import { fetchLabelReservation, uploadProductPhoto } from "../../lib/api";
 import { compressImageToBlob } from "../../lib/image";
+import { websiteSection, groupCategories } from "../../lib/websiteSection";
 
 // The barcode decoder library is large and only needed once someone
 // actually opens the scanner, so it's split into its own chunk instead of
@@ -143,15 +144,36 @@ export default function ItemFormModal({ title, initial, inventory, categories, b
       </Field>
 
       {(f.type === "frame" || f.type === "sunglasses") && (
-        <Field label={f.type === "frame" ? "Category" : "Category (optional)"}>
+        <Field label={f.type === "frame" ? "Category" : "Category (choose Gents / Ladies / Kids Sunglasses)"}>
           <Select value={f.category || ""} onChange={(e) => set("category")(e.target.value)}>
-            <option value="">— No category —</option>
-            {(categories || []).map((c) => (
-              <option key={c.id} value={c.id}>{c.label}</option>
+            <option value="">— Choose category —</option>
+            {groupCategories(categories || []).map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.items.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </optgroup>
             ))}
           </Select>
         </Field>
       )}
+      {(() => {
+        const label = (categories || []).find((c) => c.id === f.category)?.label || "";
+        const where = websiteSection(f.type, label);
+        if (f.type === "lens") return null;
+        return (
+          <p
+            className={`text-[11px] -mt-1 mb-3 px-3 py-2 rounded-lg ${where ? "bg-focusSoft text-ink" : "bg-warnSoft text-warn"}`}
+            data-testid="website-section-hint"
+          >
+            {where ? (
+              <>On the website: <b>{where}</b></>
+            ) : (
+              <>Choose a category so this shows under Men's, Women's or Kids' on the website.</>
+            )}
+          </p>
+        );
+      })()}
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Brand"><VoiceInput value={f.brand} onChange={set("brand")} placeholder={ITEM_PLACEHOLDERS[f.type]?.brand || "Brand"} /></Field>
